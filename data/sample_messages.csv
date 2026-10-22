@@ -1,0 +1,151 @@
+id,message,expected_category,expected_urgency,expected_language,learner_grade,split
+1,"Good day, I want to apply for Grade 1 for my daughter for next year. When does the application open?",admissions,low,en,1,dev
+2,hi pls is there still space for grade 8 2027?? my son was not placed by gde,admissions,medium,en,8,dev
+3,"Sawubona, ngicela ukwazi ukuthi ukubhalisa kwe Grade R kuqala nini?",admissions,medium,zu,R,dev
+4,"Dumela, ke kopa sebaka sa ngwana wa ka grade 4, re fallile mona",admissions,medium,st,4,dev
+5,"Goeie more, ek wil graag aansoek doen vir my seun vir graad 8 volgende jaar.",admissions,low,af,8,holdout
+6,What documents do I need for registration? birth certificate and proof of residence only?,admissions,medium,en,,dev
+7,"We are moving from Limpopo, how do I transfer my child to your school mid year",admissions,medium,en,5,dev
+8,the online application closing date is tomorrow and the system wont accept my proof of residence!!! urgent,admissions,high,en,1,dev
+9,Is my child on the waiting list? applied in august no feedback,admissions,medium,en,1,dev
+10,"Ngicela ukufaka isicelo sengane yami grade 1, ngiyabonga",admissions,medium,zu,1,holdout
+11,"hallo, is daar nog plek vir graad 1? ons is op die waglys",admissions,medium,af,1,dev
+12,Ke kopa ho ngodisa ngwanaka sekolong sa lona grade 8,admissions,medium,st,8,dev
+13,"My son got accepted at two schools, how do I confirm placement with you",admissions,medium,en,8,dev
+14,Good afternoon. Do you accept learners from outside the feeder zone?,admissions,low,en,,dev
+15,plz help i lost the admission letter. what is the process now,admissions,medium,en,,holdout
+16,Can I register my twins for Grade R at the same time? Do you have aftercare,admissions,low,en,R,dev
+17,"Molo, ndicela ukubhalisa umntwana wam kwi grade 3",admissions,medium,xh,3,dev
+18,hi my child is 5 turning 6 in july can he start grade 1 or grade r,admissions,low,en,R,dev
+19,Application status? It says pending for 3 weeks now. Sigh,admissions,medium,en,,dev
+20,"Ngizwe ukuthi isikole sigcwele, kodwa ngifuna indawo yengane yami grade 9",admissions,medium,zu,9,holdout
+21,"Ek het oorplasing nodig vir my dogter, ons trek Kaapstad toe",admissions,medium,af,6,dev
+22,my daughter was rejected. how do we appeal the admission decision before the deadline friday,admissions,high,en,8,dev
+23,"New learner starting monday, where do we go on the first day",admissions,medium,en,2,dev
+24,"Ntate, ke kopa ho tseba hore ngodiso ya 2027 e qala neng",admissions,low,st,,dev
+25,Do you have space for a learner with a learning barrier? we need to enrol him for grade 4,admissions,medium,en,4,holdout
+26,"hi, me and my wife want to apply for grade 10 for our son, does the school offer maths and science",admissions,low,en,10,dev
+27,Ngicela ukwazi ukuthi ingane yami yamukelwe yini? Ngafaka isicelo ngoJuly,admissions,medium,zu,,dev
+28,Registration forms - must they be certified copies?,admissions,low,en,,dev
+29,Can a grandmother register a child or must it be the parent? Mother works in Joburg,admissions,medium,en,1,dev
+30,"admissions office phone not answering, i need to submit documents before closing date",admissions,high,en,,holdout
+31,"Good morning, I received a fee statement saying I owe R2400 but I paid in March. Please check",fees_exemptions,medium,en,,dev
+32,How do I apply for school fee exemption? I lost my job,fees_exemptions,medium,en,,dev
+33,Ngicela ukwazi ukuthi imali yesikole ingakanani ngonyaka,fees_exemptions,low,zu,,dev
+34,"Ke kopa ho tseba hore tjhelete ya sekolo ke bokae, ke lefa jwang",fees_exemptions,low,st,,dev
+35,Ek wil weet hoeveel is die skoolgeld vir 2027 en kan ons maandeliks betaal?,fees_exemptions,low,af,,holdout
+36,pls send banking details for EFT,fees_exemptions,low,en,,dev
+37,my debit order went off twice this month!! I need a refund asap,fees_exemptions,high,en,,dev
+38,"Angikwazi ukukhokha imali yesikole kulenyanga, ngicela usizo",fees_exemptions,medium,zu,,dev
+39,What documents for exemption? Im a single mom with SASSA grant,fees_exemptions,medium,en,,dev
+40,"Receipt for the payment I made last week please, need it for my employer",fees_exemptions,low,en,,holdout
+41,"They said my child cant get his report because of outstanding fees, is this allowed?",fees_exemptions,medium,en,6,dev
+42,"Hi, is the school no-fee? My neighbour says she doesnt pay",fees_exemptions,low,en,,dev
+43,Ke lefile tjhelete empa statement e re ke sa kolota,fees_exemptions,medium,st,,dev
+44,"Ek het reeds betaal, hoekom kry ek nog n staat met agterstallige bedrag?",fees_exemptions,medium,af,,dev
+45,Fee exemption application deadline is when? Need to submit today if possible,fees_exemptions,high,en,,holdout
+46,"Sawubona, can i pay the fees in installments? imali iyashoda this side",fees_exemptions,medium,en,,dev
+47,"i sent proof of payment 3 times to the finance office, nobody confirms",fees_exemptions,medium,en,,dev
+48,"Sawubona, ngikhokhile kodwa angitholanga irisidi",fees_exemptions,low,zu,,dev
+49,"Ndicela ukwazi ngemali yesikolo, ndihlawule kodwa andikwazi ukubona irisithi",fees_exemptions,medium,xh,,dev
+50,How much is the school trip money? Is it separate from fees,fees_exemptions,low,en,7,holdout
+51,"Good day finance, my husband passed away and we cannot afford the fees anymore. What can we do",fees_exemptions,medium,en,,dev
+52,"Please stop the debit order, my child left the school in June",fees_exemptions,medium,en,,dev
+53,Ngicela isitatimende semali yesikole sika 2026,fees_exemptions,low,zu,,dev
+54,"Ke kopa ho lefa ka ditefello tse nyane, ke a leboha",fees_exemptions,low,st,,dev
+55,Is there a discount if I have 3 kids at the school?,fees_exemptions,low,en,,holdout
+56,"Final notice letter from school about arrears, I am scared they will hand me over to lawyers",fees_exemptions,high,en,,dev
+57,Vrystelling aansoek - watter dokumente moet ek bring?,fees_exemptions,medium,af,,dev
+58,"hi the balance on my account is wrong, i paid R850 on the 5th",fees_exemptions,medium,en,,dev
+59,"Good day teacher, when will the term 3 report cards be issued?",academic,low,en,,dev
+60,"My son is failing maths, can we meet with his teacher?",academic,medium,en,7,holdout
+61,"Ngicela ukwazi ngemiphumela yengane yami, akaphumelelanga",academic,medium,zu,,dev
+62,Ke kopa ho bona dipalo tsa ngwanaka tsa teko,academic,low,st,5,dev
+63,Hoekom het my kind so swak in wiskunde gedoen? Kan ek die juffrou spreek?,academic,medium,af,6,dev
+64,"hw for gr 4 is too much, kids up till 10pm every night",academic,low,en,4,dev
+65,When is the exam timetable coming out for grade 12,academic,medium,en,12,holdout
+66,"my daughter missed the test because she was sick, can she write again?",academic,medium,en,9,dev
+67,"subject choice for grade 10, can he change from history to accounting?",academic,medium,en,9,dev
+68,Is there extra lessons for physical science on saturdays?,academic,low,en,11,dev
+69,Ngicela ukukhuluma nothisha wengane yami mayelana nomsebenzi wasekhaya,academic,low,zu,3,dev
+70,Hoe laat begin die eksamen more?,academic,medium,af,10,holdout
+71,"my child says the teacher never marks his books, worried about his progress",academic,medium,en,5,dev
+72,Can you send the grade 6 stationery list?,academic,low,en,6,dev
+73,"Dumela titjhere, ngwanaka ha a utlwisise mosebetsi wa lapeng wa dipalo",academic,low,st,4,dev
+74,Will my son repeat the grade? his marks are low and nobody told us anything,academic,high,en,9,dev
+75,Are the June exam results available on the portal?,academic,low,en,,holdout
+76,teacher meeting is it on thursday or friday? Parent meeting for gr 11,academic,low,en,11,dev
+77,SBA marks for life sciences are missing on the report,academic,medium,en,10,dev
+78,Ndicela ukwazi ngeziphumo zomntwana wam,academic,medium,xh,,dev
+79,"My kid was given a project due tomorrow with no notice, we dont have materials",academic,high,en,5,dev
+80,"I want to discuss my daughters reading, she is struggling with reading in English",academic,medium,en,2,holdout
+81,"Ngicela uthisha ka grade 3 angithumelele umsebenzi wesikole, ingane yami ibigula",academic,medium,zu,3,dev
+82,Wanneer is ouerdag? Ek wil met die onderwyser oor sy punte praat,academic,low,af,,dev
+83,"the maths textbook was never given, he cant do homework",academic,medium,en,8,dev
+84,does the school offer a tutor for grade 12 maths? matric is close,academic,medium,en,12,dev
+85,"Hi, please explain what condonation means on the report",academic,low,en,9,holdout
+86,Ke kopa ho tseba hore ditlhahlobo di qala neng,academic,low,st,,dev
+87,My daughter told me a teacher touched her inappropriately. I dont know what to do please help,learner_welfare,critical,en,7,dev
+88,my son didnt come home from school today and his phone is off. its 7pm,learner_welfare,critical,en,8,dev
+89,"Ingane yami ihlukunyezwa ngabafundi abadala esikoleni, bamshaya nsuku zonke",learner_welfare,high,zu,6,dev
+90,"Ngwanaka o shapuwa ke bana ba bang sekolong, o tshaba ho ya sekolong",learner_welfare,high,st,5,holdout
+91,Iemand het my seun met n mes gedreig by die skool,learner_welfare,critical,af,9,dev
+92,"my child is being bullied in the group chat, they say they will beat him after school",learner_welfare,high,en,8,dev
+93,she came home with bruises and says she fell but I think someone is hurting her at aftercare,learner_welfare,critical,en,2,dev
+94,"Umntwana wam uthi ufuna ukuzibulala, ndicela uncedo ngoku",learner_welfare,critical,xh,10,dev
+95,"Learner got injured during PE and is at the clinic, nobody called us",learner_welfare,high,en,4,holdout
+96,My son is scared to go to school because older boys take his lunch money every day,learner_welfare,high,en,7,dev
+97,"Ngicela usizo, ingane yami ilahlekile kusukela izolo, igcine ibonakala esikoleni",learner_welfare,critical,zu,6,dev
+98,Daar is dwelms wat by die skool verkoop word en my dogter is bang,learner_welfare,high,af,10,dev
+99,"The scholar transport didnt come this morning again, kids stood at the bus stop for 2 hours",transport,medium,en,,dev
+100,Is there a school bus that goes to Soshanguve block L?,transport,low,en,,holdout
+101,"Ibhasi yesikole ayifikanga namhlanje, izingane zisemgwaqweni",transport,high,zu,,dev
+102,Bese ya sekolo e fihla ka nako mang mme mokganni ke mang?,transport,low,st,,dev
+103,"Die skoolbus was weer laat vanoggend, my kind het die eerste periode gemis",transport,medium,af,,dev
+104,"the taxi driver is speeding with our kids, I am worried about their safety",transport,high,en,,dev
+105,how do I apply for the provincial scholar transport programme,transport,medium,en,,holdout
+106,Can the bus drop my daughter at the corner of Main road instead,transport,low,en,3,dev
+107,pick up time changed? my child waited until 5pm yesterday,transport,medium,en,2,dev
+108,Ngicela ukwazi ukuthi ibhasi lihamba ngasiphi isikhathi ntambama,transport,low,zu,,dev
+109,Is there a lift club list? Looking for transport from Mamelodi,transport,low,en,,dev
+110,"Mokganni wa taxi o re o batla tjhelete e nngwe hape, na sekolo se a tseba?",transport,medium,st,,holdout
+111,bus route 4 cancelled?? no message from school,transport,medium,en,,dev
+112,"Ons het vervoer nodig vir 2 kinders, is daar n skoolbus roete in Eersterust?",transport,low,af,,dev
+113,"The kombi left my son behind at school, he is alone at the gate and its getting dark",transport,high,en,4,dev
+114,Transport fees for the bus - who do I pay?,transport,low,en,,dev
+115,"Umqhubi webhasi uyasela, ndicela nithethe naye",transport,medium,xh,,holdout
+116,"drop off zone is chaos in the mornings, can school organise traffic marshals",transport,low,en,,dev
+117,"I cant log in to the D6 communicator app, it says invalid password",it_portal,medium,en,,dev
+118,"Forgot password for the school portal, how do I reset",it_portal,low,en,,dev
+119,The OTP never arrives on my phone,it_portal,medium,en,,dev
+120,"Ngicela usizo, i-app yesikole ayivuli kusukela izolo",it_portal,medium,zu,,holdout
+121,"Ek kan nie aanmeld op die skool se webwerf nie, wagwoord werk nie",it_portal,medium,af,,dev
+122,google classroom link for grade 9 not working,it_portal,medium,en,9,dev
+123,Is the portal down? Error 500 when I try to see marks,it_portal,medium,en,,dev
+124,"Ke kopa phasewete e ntjha, app ha e bule",it_portal,medium,st,,dev
+125,how do i get a username for the parent portal? new parent,it_portal,low,en,,holdout
+126,My account is locked out after 3 tries,it_portal,medium,en,,dev
+127,wifi password for parents evening?,it_portal,low,en,,dev
+128,website page not loading when I open the online form,it_portal,medium,en,,dev
+129,Teams meeting link from the teacher doesnt open on my phone,it_portal,low,en,,dev
+130,The app shows another child's name and marks on my profile!!,it_portal,high,en,,holdout
+131,Ndicela iphasiwedi entsha ye portal,it_portal,low,xh,,dev
+132,D6 notifications stopped coming through since the update,it_portal,low,en,,dev
+133,Ek kry n foutboodskap op die toep elke keer,it_portal,low,af,,dev
+134,"the school email address bounced my message, which one is correct?",it_portal,low,en,,dev
+135,Where can I buy the school uniform and how much is the blazer?,other,low,en,,holdout
+136,When is sports day this term?,other,low,en,,dev
+137,Thank you to the staff for the wonderful heritage day concert!,other,low,en,,dev
+138,Ngiyabonga kakhulu ngomcimbi wangoLwesihlanu,other,low,zu,,dev
+139,Ke a leboha ka moketjana wa sekolo,other,low,st,,dev
+140,Wanneer is die skool se funksie vir graad 7 afskeid?,other,low,af,7,holdout
+141,lost property: my son lost his jersey with name tag,other,low,en,,dev
+142,What are the office hours on Fridays?,other,low,en,,dev
+143,I would like to volunteer at the tuck shop,other,low,en,,dev
+144,When is the next SGB meeting? I want to raise a concern about the toilets,other,medium,en,,dev
+145,Complaint: the school gate is always locked when we come to fetch,other,medium,en,,holdout
+146,School photos - when do we get them?,other,low,en,,dev
+147,is school closing early on friday for the long weekend,other,low,en,,dev
+148,"Excursion to the zoo, does my child need to bring lunch?",other,low,en,3,dev
+149,"Molo, ndicela ukwazi ngeyunifomu entsha",other,low,xh,,dev
+150,"hello, who do I speak to about something?",other,low,en,,holdout

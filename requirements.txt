@@ -1,0 +1,12 @@
+# Backend requirements (kept small so the API fits Vercel's function size limit).
+# Frontend has its own frontend/requirements.txt.
+fastapi>=0.115,<1.0
+uvicorn>=0.30
+sqlalchemy>=2.0,<3.0
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3
+httpx>=0.27            # Gemini REST calls + FastAPI TestClient
+anthropic>=2.1,<3.0    # official Claude SDK (only used when LLM_PROVIDER=anthropic)
+
+# Testing
+pytest>=8.0

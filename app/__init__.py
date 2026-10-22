@@ -1,0 +1,1 @@
+"""SchoolConnect backend package."""
