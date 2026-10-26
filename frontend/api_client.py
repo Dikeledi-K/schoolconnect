@@ -134,3 +134,50 @@ def insights(days: int = 14, as_of: str | None = None, staff: str | None = None)
 def evaluation(as_of: str | None = None) -> dict:
     return _request("GET", "/forecast/evaluation", params=_clean({"as_of": as_of}))
 
+
+
+# ---- Week 6: replies, corrections, audit, risk & compliance ---------------
+def draft_reply(ticket_id: int, tone: str) -> dict:
+    return _request("POST", f"/tickets/{ticket_id}/responses", json={"tone": tone})
+
+
+def replies(ticket_id: int) -> list[dict]:
+    return _request("GET", f"/tickets/{ticket_id}/responses")
+
+
+def edit_reply(response_id: int, body: str, actor: str) -> dict:
+    return _request("PATCH", f"/responses/{response_id}", json={"body": body, "actor": actor})
+
+
+def approve_reply(response_id: int, approved_by: str) -> dict:
+    return _request("POST", f"/responses/{response_id}/approve", json={"approved_by": approved_by})
+
+
+def correct_classification(ticket_id: int, actor: str, reason: str,
+                           category: str | None = None, urgency: str | None = None) -> dict:
+    body = {"actor": actor, "reason": reason, "category": category, "urgency": urgency}
+    return _request("PATCH", f"/tickets/{ticket_id}/classification", json={k: v for k, v in body.items() if v})
+
+
+def ticket_audit(ticket_id: int) -> list[dict]:
+    return _request("GET", f"/tickets/{ticket_id}/audit")
+
+
+def anonymise(ticket_id: int, actor: str) -> dict:
+    return _request("POST", f"/privacy/tickets/{ticket_id}/anonymise", params={"actor": actor})
+
+
+def risk_summary(days: int = 30) -> dict:
+    return _request("GET", "/risk/summary", params={"days": days})
+
+
+def risk_report_pdf(days: int = 30) -> bytes:
+    """The PDF bytes (not JSON), so this call does not use _request()."""
+    try:
+        response = requests.get(base_url() + "/risk/report.pdf", params={"days": days},
+                                headers=_headers(), timeout=TIMEOUT_SECONDS)
+    except requests.RequestException as exc:
+        raise ApiError(f"Could not reach the SchoolConnect API at {base_url()}.") from exc
+    if response.status_code >= 400:
+        raise ApiError(f"Could not create the report ({response.status_code}).")
+    return response.content

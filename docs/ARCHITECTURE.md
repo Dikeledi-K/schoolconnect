@@ -191,3 +191,72 @@ All forecast endpoints accept `as_of=YYYY-MM-DD` (a past date gives the backtest
 `forecast_runs`: id, created_at, as_of, horizon_days, chosen_models (JSON), metrics (JSON), forecast (JSON).
 The forecaster reads only `tickets.created_at` and `tickets.category`; no personal data.
 
+
+## Week 6 additions: AI risk & compliance layer
+
+```mermaid
+flowchart TB
+    M["Parent message<br/>(+ name, contact)"] --> PII["privacy/pii.py<br/>mask IDs, phones, emails,<br/>long numbers, known names"]
+    M --> RULES["rules + safety guardrails<br/>(local, ORIGINAL text)"]
+    PII --> LLM["optional AI<br/>(masked text only)"]
+    LLM --> RULES
+    RULES --> T[("tickets")]
+    RULES --> A[("ai_audit_log<br/>hash of masked input,<br/>guardrails, PII counts")]
+    T --> D["responses/generator.py<br/>template from school_info.yaml"]
+    D -->|welfare / safety| ACK["acknowledgement only<br/>(never sent to an AI)"]
+    D -->|AI configured| RW["AI rewrite<br/>in parent's language"]
+    RW --> G{"grounding check:<br/>new number, email,<br/>link, placeholder?"}
+    G -- yes --> D
+    G -- no --> R
+    ACK --> R[("responses: draft")]
+    D --> R
+    R --> S["staff edit + approve"]
+    S --> A
+    C["staff correction"] --> RULES
+    C --> A
+    A --> F["risk/fairness.py<br/>by language and grade"]
+    A --> SUM["risk/summary.py"]
+    INJ["risk/injection.py<br/>prompt-injection suite"] --> SUM
+    F --> SUM
+    SUM --> PDF["risk/report.py → PDF"]
+    T --> RET["privacy/retention.py<br/>anonymise old resolved tickets"]
+```
+
+| Part | File(s) | Responsibility |
+|---|---|---|
+| PII masker | `app/privacy/pii.py` | Masks SA IDs (Luhn), phones, emails, long numbers, known names; log-record redaction |
+| Retention | `app/privacy/retention.py` | Anonymise resolved tickets older than `RETENTION_DAYS` (dry run by default) |
+| Audit | `app/audit.py`, `ai_audit_log` | One row per AI decision or human action; no raw personal data |
+| Reply templates | `app/responses/templates.py`, `config/school_info.yaml` | Facts and three tones; acknowledgement-only text for welfare |
+| Reply generator | `app/responses/generator.py`, `app/llm_text.py` | Optional AI rewrite with masked input and a grounding check |
+| Corrections | `crud.correct_classification` | Staff override, guardrails re-applied, audit row |
+| Fairness | `app/risk/fairness.py` | Accuracy, waiting time, correction rate by language and grade band |
+| Injection suite | `app/risk/injection.py`, `data/prompt_injection_cases.json` | Rules, obedient-AI simulation, tag wrapping, reply grounding |
+| Risk summary / PDF | `app/risk/summary.py`, `app/risk/report.py`, `config/risk_register.yaml` | Counts-only summary and 3-page report |
+
+### Week 6 endpoints
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| POST | `/tickets/{id}/responses` | API key* | Draft a reply (`tone`: formal, friendly, urgent) |
+| GET | `/tickets/{id}/responses` | API key* | Reply drafts for a ticket |
+| PATCH | `/responses/{id}` | API key* | Staff edit a draft (logged) |
+| POST | `/responses/{id}/approve` | API key* | Staff approve a reply (logged) |
+| PATCH | `/tickets/{id}/classification` | API key* | Staff correct category/urgency; guardrails re-applied |
+| GET | `/tickets/{id}/audit` | API key* | Audit trail for one ticket |
+| POST | `/privacy/tickets/{id}/anonymise` | API key* | POPIA: remove personal data on request |
+| GET | `/risk/summary` | API key* | Counts: AI decisions, guardrails, PII masked, overrides, fairness, injection, register |
+| GET | `/risk/fairness` | API key* | Fairness report |
+| GET | `/risk/report.pdf` | API key* | Risk evaluation PDF |
+| POST | `/jobs/retention` | X-Jobs-Token | Retention run; `dry_run=true` by default |
+
+### Data model (Week 6)
+
+- `responses`: id, ticket_id, tone, language, body, original_body, method, acknowledgement_only,
+  status (draft/approved), edited, notes, created_at, updated_at, approved_at, approved_by.
+- `ai_audit_log`: id, created_at, feature, ticket_id, method, model, llm_used, fallback_reason,
+  input_hash (SHA-256 of masked input), output (JSON), guardrails (JSON), pii_found (counts),
+  human_override, actor.
+
+New tables are created automatically on startup; existing tables are unchanged, so a Week 5
+database keeps working.

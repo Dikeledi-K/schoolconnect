@@ -37,7 +37,28 @@ from app.schemas import (
 from app.forecasting import service as fc
 from app.forecasting.data import daily_counts
 from app.forecasting.forecast import MAX_HORIZON
+from app import audit
+from app.llm_text import llm_available, model_name
+from app.privacy.pii import install_log_redaction, mask_pii
+from app.privacy.retention import run_retention
+from app.responses.generator import generate_draft
+from app.responses.templates import load_school_info
+from app.risk.fairness import fairness_report
+from app.risk.report import build_pdf
+from app.risk.summary import build_summary
+from app.schemas import (
+    AuditOut,
+    ClassificationCorrection,
+    CorrectionResult,
+    ResponseApprove,
+    ResponseCreate,
+    ResponseEdit,
+    ResponseOut,
+)
 from app.taxonomy import CATEGORIES, STAFF_ROLES, taxonomy_as_dict
+
+# Week 6 (POPIA): mask personal data in every log line, from the moment the app is imported.
+install_log_redaction()
 
 SAFETY_NOTICE = (
     "If a child is in immediate danger call 10111 (SAPS) or 112 from a cellphone. "
@@ -122,9 +143,24 @@ def ticket_by_reference(reference: str, db: Session = Depends(get_db)):
     dependencies=[Depends(require_api_key)],
 )
 def create_ticket(body: TicketCreate, db: Session = Depends(get_db)) -> TicketCreated:
-    # Only the message text goes to the classifier, never name/contact.
-    result = classify_message(body.message)
+    # Only the message text goes to the classifier, never name/contact. Week 6: the text is also
+    # masked (IDs, phones, emails, the parent's own name) before any AI sees it.
+    names = [body.parent_name] if body.parent_name else None
+    settings = get_settings()
+    result = classify_message(body.message, names=names)
     ticket = crud.create_ticket(db, body, result)
+    masked = mask_pii(body.message, names)
+    ai_configured = llm_available(settings)
+    audit.record(
+        db, "classification", result.method, ticket_id=ticket.id,
+        model=model_name(settings) if result.method != "rules" else None,
+        llm_used=result.method != "rules",
+        fallback_reason="AI failed or gave invalid output" if ai_configured and result.method == "rules" else None,
+        masked_input=masked.text, pii_found=masked.counts, guardrails=result.guardrails_applied,
+        output={"category": result.category, "urgency": result.urgency, "language": result.language,
+                "confidence": result.confidence, "needs_human": result.needs_human,
+                "safety_flag": result.safety_flag},
+    )
     return TicketCreated(
         id=ticket.id,
         reference=ticket.reference,
@@ -313,3 +349,114 @@ def refresh_forecast(days: int = Query(60, ge=1, le=MAX_HORIZON), db: Session = 
     return {"run_id": run.id, "as_of": run.as_of, "horizon_days": run.horizon_days,
             "chosen_models": run.chosen_models}
 
+
+
+# --------------------------------------------------------------------------
+# Week 6: replies, staff corrections, audit, risk & compliance (staff only: API key)
+# --------------------------------------------------------------------------
+def _ticket_or_404(db: Session, ticket_id: int):
+    ticket = crud.get_ticket(db, ticket_id)
+    if ticket is None:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
+
+
+def _response_or_404(db: Session, response_id: int):
+    response = crud.get_response(db, response_id)
+    if response is None:
+        raise HTTPException(status_code=404, detail="Reply not found")
+    return response
+
+
+@app.post("/tickets/{ticket_id}/responses", response_model=ResponseOut, status_code=201,
+          tags=["replies"], dependencies=[Depends(require_api_key)])
+def draft_response(ticket_id: int, body: ResponseCreate, db: Session = Depends(get_db)):
+    """Draft a reply (template, or AI-rewritten and fact-checked). Staff must approve it."""
+    ticket = _ticket_or_404(db, ticket_id)
+    return crud.create_response(db, ticket, body.tone, generate_draft(ticket, body.tone))
+
+
+@app.get("/tickets/{ticket_id}/responses", response_model=list[ResponseOut], tags=["replies"],
+         dependencies=[Depends(require_api_key)])
+def list_responses(ticket_id: int, db: Session = Depends(get_db)):
+    _ticket_or_404(db, ticket_id)
+    return crud.list_responses(db, ticket_id)
+
+
+@app.patch("/responses/{response_id}", response_model=ResponseOut, tags=["replies"],
+           dependencies=[Depends(require_api_key)])
+def edit_response(response_id: int, body: ResponseEdit, db: Session = Depends(get_db)):
+    try:
+        return crud.edit_response(db, _response_or_404(db, response_id), body.body, body.actor)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+
+
+@app.post("/responses/{response_id}/approve", response_model=ResponseOut, tags=["replies"],
+          dependencies=[Depends(require_api_key)])
+def approve_response(response_id: int, body: ResponseApprove, db: Session = Depends(get_db)):
+    try:
+        return crud.approve_response(db, _response_or_404(db, response_id), body.approved_by)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+
+
+@app.patch("/tickets/{ticket_id}/classification", response_model=CorrectionResult, tags=["compliance"],
+           dependencies=[Depends(require_api_key)])
+def correct_classification(ticket_id: int, body: ClassificationCorrection, db: Session = Depends(get_db)):
+    """Staff correct the AI's category/urgency. Child-safety guardrails still apply."""
+    if body.category is None and body.urgency is None:
+        raise HTTPException(status_code=422, detail="Give a category, an urgency, or both")
+    ticket = _ticket_or_404(db, ticket_id)
+    ticket, applied = crud.correct_classification(db, ticket, body.category, body.urgency, body.actor, body.reason)
+    note = None
+    if applied:
+        note = ("The child-safety guardrails kept this ticket at a safe level. "
+                "A person must still handle it; you can resolve it when it is dealt with.")
+    return CorrectionResult(ticket=TicketOut.model_validate(ticket), guardrails_applied=applied, note=note)
+
+
+@app.get("/tickets/{ticket_id}/audit", response_model=list[AuditOut], tags=["compliance"],
+         dependencies=[Depends(require_api_key)])
+def ticket_audit(ticket_id: int, db: Session = Depends(get_db)):
+    """Every AI decision and human override for one ticket (transparency)."""
+    _ticket_or_404(db, ticket_id)
+    return audit.for_ticket(db, ticket_id)
+
+
+@app.post("/privacy/tickets/{ticket_id}/anonymise", tags=["compliance"], dependencies=[Depends(require_api_key)])
+def anonymise_ticket(ticket_id: int, actor: str = Query(..., min_length=1, max_length=120),
+                     db: Session = Depends(get_db)) -> dict:
+    """POPIA: remove a parent's personal data from a ticket on request (keeps the statistics)."""
+    ticket = _ticket_or_404(db, ticket_id)
+    removed = crud.anonymise_ticket(db, ticket, commit=False)
+    audit.record(db, "anonymise", "staff", ticket_id=ticket_id, actor=actor, human_override=True,
+                 pii_found=removed, output={"reason": "data subject request"})
+    return {"ticket_id": ticket_id, "removed": removed}
+
+
+@app.get("/risk/summary", tags=["compliance"], dependencies=[Depends(require_api_key)])
+def risk_summary(days: int = Query(30, ge=1, le=365), db: Session = Depends(get_db)) -> dict:
+    """AI decisions, guardrails, PII masked, overrides, fairness and injection results (counts only)."""
+    return build_summary(db, days)
+
+
+@app.get("/risk/fairness", tags=["compliance"], dependencies=[Depends(require_api_key)])
+def risk_fairness(db: Session = Depends(get_db)) -> dict:
+    return fairness_report(db)
+
+
+@app.get("/risk/report.pdf", tags=["compliance"], dependencies=[Depends(require_api_key)])
+def risk_report(days: int = Query(30, ge=1, le=365), db: Session = Depends(get_db)):
+    """Download the risk evaluation report as a PDF."""
+    from fastapi.responses import Response as HTTPResponse
+
+    pdf = build_pdf(build_summary(db, days), load_school_info()["school"]["name"])
+    return HTTPResponse(content=pdf, media_type="application/pdf",
+                        headers={"Content-Disposition": 'attachment; filename="schoolconnect-risk-report.pdf"'})
+
+
+@app.post("/jobs/retention", tags=["jobs"], dependencies=[Depends(require_jobs_token)])
+def retention_job(dry_run: bool = True, db: Session = Depends(get_db)) -> dict:
+    """POPIA retention: anonymise resolved tickets older than RETENTION_DAYS. Dry run by default."""
+    return run_retention(db, dry_run=dry_run)

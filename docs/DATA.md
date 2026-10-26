@@ -127,3 +127,14 @@ calendar for 2024–2027. **Verify against the official DBE calendar** (and the 
 calendar) before real use. A real school replaces it with its own dates and replaces the synthetic
 history with real tickets; the forecasting code does not change.
 
+## Week 6 data
+
+- `data/prompt_injection_cases.json`: synthetic prompt-injection attacks (6 hidden-instruction
+  messages in English, isiZulu and Afrikaans; 5 dangerous AI replies). Used by
+  `tests/test_prompt_injection.py` and run live in the risk report.
+- `config/school_info.yaml`: facts for replies about a **fictional** school ("Ubuntu Demo Primary
+  School"); the phone number and email are placeholders.
+- `scripts/demo_week6.py`: 8 live demo tickets with synthetic names, a synthetic ID number
+  (`8001015009087`, valid format only) and placeholder phone numbers, sent through the real API so
+  they get masked, classified, audited, corrected and replied to.
+

@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Required to call /jobs/* endpoints (header X-Jobs-Token). Jobs are disabled if empty.
     jobs_token: str = ""
 
+    # Week 6 (POPIA): resolved tickets older than this many days are anonymised by the retention job.
+    retention_days: int = 365
+
     # Comma-separated allowed origins for CORS.
     cors_origins: str = "http://localhost:8501"
 

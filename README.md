@@ -20,11 +20,11 @@ wait days for answers.
 | Week | Module | Status |
 |------|--------|--------|
 | 1 | System design & ticket classification engine | ✅ done |
-| 2 | Automated response generation | skipped (schedule change); minimal version in Week 6 |
+| 2 | Automated response generation | skipped (schedule change); built in Week 6 |
 | 3 | Data tracking & analytics dashboard | skipped; history charts in Week 5 |
 | 4 | Business reporting automation | skipped (optional backlog) |
 | 5 | Predictive insights | ✅ done |
-| 6 | AI risk & compliance layer | planned |
+| 6 | AI risk & compliance layer | ✅ done |
 | 7 | Workflow automation & integration | planned |
 | 8 | Deployment & showcase | planned |
 
@@ -42,6 +42,17 @@ wait days for answers.
 - Spike alerts with the likely cause, plain-language recommendations, a "what if we add staff"
   scenario, and an honest accuracy report.
 - **Backtest demo:** pretend it is 15 December 2025, forecast January, then compare with what really happened.
+
+### What works now (Week 6: AI risk & compliance)
+- **Privacy:** SA ID numbers, phone numbers, emails and known names are masked before any AI sees a
+  message, and in every log line. Staff can anonymise a ticket on request; a retention job anonymises
+  old resolved tickets ([docs/POPIA.md](docs/POPIA.md)).
+- **Reply drafts** from the school's own facts in three tones; an optional AI rewrite is rejected if
+  it invents a number, email or link. Welfare replies are acknowledgement-only. Staff approve every reply.
+- **Accountability:** every AI decision and staff correction is in an audit log (no raw personal data).
+  Staff corrections cannot lower a child-safety ticket.
+- **Fairness** by language and grade, a **prompt-injection suite** (23/23 checks pass), and a
+  downloadable **risk evaluation PDF**.
 
 ## Forecast results (Week 5, synthetic history)
 | Measure | Result |
@@ -83,6 +94,7 @@ python scripts/evaluate_classifier.py  # writes docs/classifier_evaluation.md
 # Week 5 forecasting demo (replaces the 150 demo tickets with ~24 months of history):
 python scripts/generate_history.py --reset
 python scripts/evaluate_forecast.py    # writes docs/forecast_evaluation.md
+python scripts/demo_week6.py           # Week 6: live tickets, corrections and replies for the demo
 
 uvicorn app.main:app --reload          # API on http://localhost:8000 (docs at /docs)
 streamlit run frontend/Home.py         # in a second terminal: UI on http://localhost:8501
@@ -94,7 +106,7 @@ Without a key the app silently uses the rules classifier.
 ## Project structure
 ```
 app/            FastAPI backend (taxonomy, classifier, forecasting, models, API)
-config/         school calendar and staff workload settings (YAML)
+config/         school facts, calendar, staff workload and risk register (YAML)
 frontend/       Streamlit app (talks to the API over HTTP only)
 data/           synthetic sample messages
 scripts/        seed and evaluation scripts
@@ -108,8 +120,9 @@ docs/           architecture, roadmap, data, evaluation, weekly reports
 - [Sample data](docs/DATA.md)
 - [Classifier evaluation](docs/classifier_evaluation.md)
 - [How the forecasting works](docs/FORECASTING.md) · [Forecast evaluation](docs/forecast_evaluation.md)
+- [POPIA: how personal information is protected](docs/POPIA.md)
 - [Changelog](CHANGELOG.md)
-- Weekly reports: [Week 1](docs/weekly/WEEK_1.md) · [Week 5](docs/weekly/WEEK_5.md)
+- Weekly reports: [Week 1](docs/weekly/WEEK_1.md) · [Week 5](docs/weekly/WEEK_5.md) · [Week 6](docs/weekly/WEEK_6.md)
 
 ## Live links
 _Coming in Week 8._

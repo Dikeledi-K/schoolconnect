@@ -139,3 +139,140 @@ def get_stats(db: Session) -> dict:
 def ticket_timestamps(db: Session) -> list[tuple[datetime, str]]:
     """(created_at, category) for every ticket. Week 5 forecasting only needs these two fields."""
     return list(db.execute(select(Ticket.created_at, Ticket.category)).all())
+
+
+# --------------------------------------------------------------------------
+# Week 6: staff corrections, reply drafts, anonymisation
+# --------------------------------------------------------------------------
+def correct_classification(db: Session, ticket: Ticket, category: str | None, urgency: str | None,
+                           actor: str, reason: str) -> tuple[Ticket, list[str]]:
+    """A staff member corrects the AI's category and/or urgency (a "human override").
+
+    The child-safety guardrails run again on the corrected values, so a person can never
+    LOWER a safety ticket below what the guardrails require. (They can still resolve it.)
+    Returns the ticket and the guardrails that changed the correction.
+    """
+    from app import audit
+    from app.classifier.service import apply_guardrails
+
+    before = {"category": ticket.category, "urgency": ticket.urgency}
+    proposed = ClassificationResult(
+        category=category or ticket.category,
+        urgency=urgency or ticket.urgency,
+        language=ticket.language,
+        routed_role=ticket.routed_role,
+        confidence=1.0,            # a person decided
+        method="staff",
+        needs_human=ticket.needs_human,
+        safety_flag=ticket.safety_flag,
+        reason=f"Corrected by {actor}: {reason}",
+    )
+    final = apply_guardrails(ticket.message, proposed)
+    ticket.category, ticket.urgency = final.category, final.urgency
+    ticket.routed_role, ticket.safety_flag = final.routed_role, final.safety_flag
+    ticket.needs_human = final.needs_human or ticket.needs_human
+    # The classification is now a person's decision (the AI's original is kept in the audit log).
+    ticket.method, ticket.confidence = "staff", 1.0
+    ticket.updated_at = utcnow()
+    audit.record(
+        db, "human_override", "staff", ticket_id=ticket.id, human_override=True, actor=actor,
+        output={"before": before, "requested": {"category": proposed.category, "urgency": proposed.urgency},
+                "after": {"category": final.category, "urgency": final.urgency}, "reason": reason},
+        guardrails=final.guardrails_applied, commit=False,
+    )
+    db.commit()
+    db.refresh(ticket)
+    return ticket, final.guardrails_applied
+
+
+def create_response(db: Session, ticket: Ticket, tone: str, draft) -> "Response":
+    """Save a reply draft (status 'draft') and its audit row."""
+    from app import audit
+    from app.models import Response
+
+    response = Response(
+        ticket_id=ticket.id, tone=tone, language=ticket.language if draft.llm_used else "en",
+        body=draft.body, original_body=draft.body, method=draft.method,
+        acknowledgement_only=draft.acknowledgement_only, notes="\n".join(draft.notes),
+    )
+    db.add(response)
+    db.flush()
+    audit.record(
+        db, "response_draft", draft.method, ticket_id=ticket.id, model=draft.model,
+        llm_used=draft.llm_used, fallback_reason=draft.fallback_reason,
+        masked_input=draft.masked_input, pii_found=draft.pii_found,
+        output={"response_id": response.id, "tone": tone, "acknowledgement_only": draft.acknowledgement_only,
+                "characters": len(draft.body)},
+        guardrails=["acknowledgement_only"] if draft.acknowledgement_only else [], commit=False,
+    )
+    db.commit()
+    db.refresh(response)
+    return response
+
+
+def list_responses(db: Session, ticket_id: int) -> list:
+    from app.models import Response
+
+    return list(db.scalars(select(Response).where(Response.ticket_id == ticket_id).order_by(Response.id)))
+
+
+def get_response(db: Session, response_id: int):
+    from app.models import Response
+
+    return db.get(Response, response_id)
+
+
+def edit_response(db: Session, response, body: str, actor: str):
+    """Staff change the draft text. Only drafts can be edited; an AI draft edited by a person is an override."""
+    from app import audit
+
+    if response.status != "draft":
+        raise ValueError("Only draft replies can be edited")
+    response.body, response.edited = body, True
+    audit.record(db, "response_edit", "staff", ticket_id=response.ticket_id, human_override=True,
+                 actor=actor, output={"response_id": response.id, "ai_written": response.method != "template"},
+                 commit=False)
+    db.commit()
+    db.refresh(response)
+    return response
+
+
+def approve_response(db: Session, response, approved_by: str):
+    """A person approves the reply. Nothing reaches a parent without this step (sending is Week 7)."""
+    from app import audit
+
+    if response.status != "draft":
+        raise ValueError("This reply is already approved")
+    response.status, response.approved_by, response.approved_at = "approved", approved_by, utcnow()
+    audit.record(db, "response_approval", "staff", ticket_id=response.ticket_id, actor=approved_by,
+                 human_override=response.edited,
+                 output={"response_id": response.id, "edited": response.edited, "method": response.method},
+                 commit=False)
+    db.commit()
+    db.refresh(response)
+    return response
+
+
+def anonymise_ticket(db: Session, ticket: Ticket, commit: bool = True) -> dict:
+    """POPIA: remove the parent's name and contact, and mask personal data in the message.
+
+    The ticket itself stays (category, dates) so statistics and forecasts still work.
+    Returns the PII counts that were removed.
+    """
+    from app.models import Response
+    from app.privacy.pii import mask_pii
+
+    names = [ticket.parent_name] if ticket.parent_name else None
+    masked = mask_pii(ticket.message, names)
+    removed = dict(masked.counts)
+    if ticket.parent_name:
+        removed["parent_name_field"] = 1
+    if ticket.parent_contact:
+        removed["parent_contact_field"] = 1
+    ticket.message, ticket.parent_name, ticket.parent_contact = masked.text, None, None
+    for response in db.scalars(select(Response).where(Response.ticket_id == ticket.id)):
+        response.body = mask_pii(response.body, names).text
+        response.original_body = mask_pii(response.original_body, names).text
+    if commit:
+        db.commit()
+    return removed

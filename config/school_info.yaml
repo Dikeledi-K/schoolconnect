@@ -1,0 +1,54 @@
+# School facts used in replies to parents.
+#
+# THIS IS THE ONLY SOURCE OF FACTS FOR REPLIES. The AI may rephrase or translate a reply,
+# but any number, date, email address, phone number or link it writes must appear in this
+# file or in the template draft, or the AI version is rejected.
+#
+# DEMO VALUES: "Ubuntu Demo Primary School" is FICTIONAL. Replace every value with your own
+# school's details before real use. The phone number and email below are placeholders.
+
+school:
+  name: "Ubuntu Demo Primary School"
+  phone: "010 000 0000"
+  email: "office@ubuntu-demo.school.example"
+  office_hours: "Monday to Friday, 07:30 to 15:30"
+  address: "1 Example Street, Demo Township"
+
+# How quickly the office promises to respond, by urgency.
+response_times:
+  critical: "today, as a matter of priority"
+  high: "within 1 school day"
+  medium: "within 2 school days"
+  low: "within 5 school days"
+
+emergency: "If a child is in immediate danger, phone 10111 (SAPS) or 112 from a cellphone."
+
+admissions:
+  documents:
+    - "the learner's birth certificate"
+    - "the parent or guardian's ID document"
+    - "proof of residence (not older than 3 months)"
+    - "the learner's latest school report (for transfers)"
+    - "immunisation card (Grade R and Grade 1)"
+  steps:
+    - "Apply on your provincial online admissions system during the application window."
+    - "Submit certified copies of the documents to the school office."
+    - "Watch for the placement offer and accept it before the deadline."
+
+fees:
+  exemption_documents:
+    - "the completed fee exemption application form (available from the office)"
+    - "proof of income for both parents or guardians (payslips, or an affidavit if unemployed)"
+    - "a copy of the parent or guardian's ID document"
+  payment_reference: "the learner's surname and grade"
+  statement_requests: "Statements can be requested from the finance office by email or in person."
+
+academic:
+  reports: "Reports are issued on the last school day of each term."
+  meetings: "To meet a teacher, ask the office to book a time; meetings are held after 14:00."
+
+transport:
+  info: "Scholar transport questions are handled by the admin office, which liaises with the transport provider."
+
+it_portal:
+  password_reset: "Use the 'Forgot password' link on the login page, or ask the office to reset it."

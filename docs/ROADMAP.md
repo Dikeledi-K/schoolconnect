@@ -77,16 +77,18 @@ One platform, built progressively. Tick each box only when it is built, tested a
 ## Week 6 — AI Risk & Compliance Layer
 **Outcome:** ethical and compliance awareness layer.
 
-- [ ] Minimal response generator first (Week 2 was skipped): grounded in `config/school_info.yaml`, tone control, template fallback, staff approval, welfare = acknowledgement only
-- [ ] `app/privacy/pii.py`: SA ID (13 digits + Luhn), SA phones (0xx / +27), emails, names from name fields
-- [ ] Masker applied before every LLM call and in all logs
-- [ ] `ai_audit_log` table: timestamp, feature, method/model, masked input hash, output, guardrails, human override
-- [ ] UI transparency notes: "AI-suggested", confidence, reason
-- [ ] Bias/fairness: accuracy + response times by language and grade; flag gaps over threshold
-- [ ] Prompt-injection test suite
-- [ ] Risk evaluation PDF (risks, incidents, overrides, fairness)
-- [ ] `docs/POPIA.md` (data, purpose, retention, access control, data subject rights)
-- [ ] Retention clean-up job
+- [x] Minimal response generator first (Week 2 was skipped): `config/school_info.yaml` (fictional demo school), templates per category, tone control (formal, friendly, urgent), optional AI rewrite in the parent's language, grounding check (no new numbers/emails/links/placeholders), staff edit + approve, welfare/safety = acknowledgement only and never sent to an AI
+- [x] `app/privacy/pii.py`: SA ID (13 digits + real date + Luhn), SA phones (0xx / +27 / 0027), emails, long numbers, names from name fields
+- [x] Masker applied before every LLM call (classification and replies) and to every log record
+- [x] `ai_audit_log` table: timestamp, feature, method/model, AI used, fallback reason, masked input hash, output, guardrails, PII counts, human override, actor
+- [x] UI transparency notes: "AI-suggested" / "Checked by staff", method, confidence, reason, guardrails, audit trail
+- [x] Staff corrections of category/urgency (human override), guardrails re-applied so safety tickets cannot be lowered
+- [x] Bias/fairness: classifier accuracy, median resolution time and correction rate by language and grade band; gaps over threshold flagged; small groups not judged
+- [x] Prompt-injection test suite (`data/prompt_injection_cases.json`): rules, obedient-AI simulation, data-tag wrapping, reply grounding
+- [x] Risk evaluation PDF (`GET /risk/report.pdf`) + Risk & compliance page + `config/risk_register.yaml`
+- [x] `docs/POPIA.md` (data, purpose, cross-border AI, retention, access control, data subject rights)
+- [x] Retention clean-up job (`POST /jobs/retention`, dry run by default) + anonymise-on-request
+- [x] `scripts/demo_week6.py`, tests (185 passing), `docs/weekly/WEEK_6.md`
 
 ## Week 7 — Workflow Automation & System Integration
 **Outcome:** a fully integrated automation system.

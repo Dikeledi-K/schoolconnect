@@ -14,5 +14,8 @@ numpy>=1.26
 scikit-learn>=1.4
 pyyaml>=6.0
 
+# Week 6 risk report PDF
+reportlab>=4.0
+
 # Testing
 pytest>=8.0

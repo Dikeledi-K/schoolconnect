@@ -1,0 +1,67 @@
+# SchoolConnect AI risk register. Reviewed by the principal / information officer each term.
+# likelihood and impact: low | medium | high. status: mitigated | monitored | open.
+
+risks:
+  - id: R1
+    risk: "A child-safety message is classified as low urgency or not seen by a person"
+    likelihood: low
+    impact: high
+    mitigation: "Safety guardrails on the raw text force critical/high and a human, for rules AND AI; tested by the prompt-injection suite"
+    status: mitigated
+    owner: Deputy Principal
+
+  - id: R2
+    risk: "Personal information (names, ID numbers, phone numbers) sent to an external AI service"
+    likelihood: medium
+    impact: high
+    mitigation: "PII masker before every AI call and in all logs; only the message text is used; rules mode needs no AI at all"
+    status: mitigated
+    owner: Information Officer
+
+  - id: R3
+    risk: "AI reply invents facts (fees, dates, bank details, links)"
+    likelihood: medium
+    impact: high
+    mitigation: "Facts only from config/school_info.yaml; grounding check rejects new numbers, emails, links; staff approve every reply"
+    status: mitigated
+    owner: Admin Clerk
+
+  - id: R4
+    risk: "Parents writing in isiZulu, Sesotho, Afrikaans or isiXhosa get worse service"
+    likelihood: medium
+    impact: medium
+    mitigation: "Fairness checks by language (accuracy, waiting time, correction rate); non-English keywords need first-language review"
+    status: monitored
+    owner: Principal
+
+  - id: R5
+    risk: "Prompt injection: instructions hidden in a parent message change the AI's behaviour"
+    likelihood: medium
+    impact: medium
+    mitigation: "Message wrapped as data; guardrails on raw text; replies grounded and staff-approved; injection suite in tests and in this report"
+    status: mitigated
+    owner: IT Support
+
+  - id: R6
+    risk: "Personal data kept longer than needed"
+    likelihood: medium
+    impact: medium
+    mitigation: "Retention job anonymises resolved tickets after RETENTION_DAYS; staff can anonymise on request"
+    status: mitigated
+    owner: Information Officer
+
+  - id: R7
+    risk: "Staff trust AI suggestions without checking"
+    likelihood: medium
+    impact: medium
+    mitigation: "AI-suggested labels, confidence and reasons shown; low-confidence tickets flagged; corrections logged and reviewed"
+    status: monitored
+    owner: Principal
+
+  - id: R8
+    risk: "Forecasts mislead staffing decisions"
+    likelihood: low
+    impact: low
+    mitigation: "Backtested accuracy shown next to every forecast; busy-week scenario; synthetic-data notice"
+    status: monitored
+    owner: Principal

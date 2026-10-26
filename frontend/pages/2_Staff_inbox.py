@@ -29,6 +29,9 @@ urgencies = [u["code"] for u in tax["urgency_levels"]]
 
 # ---- Filters -------------------------------------------------------------
 with st.sidebar:
+    # Staff login arrives in Week 7; until then staff type their name so every correction
+    # and approval in the audit log says who made it.
+    staff_name = st.text_input("Your name (for the audit log)", key="staff_name").strip()
     st.header("Filters")
     f_status = st.selectbox("Status", ["All"] + list(statuses), format_func=lambda s: statuses.get(s, s))
     f_category = st.selectbox("Category", ["All"] + list(categories), format_func=lambda c: categories.get(c, c))
@@ -88,9 +91,20 @@ with left:
     )
     if t["safety_flag"]:
         st.error("Learner safety concern: a person must handle this. Do not rely on an automatic reply.")
+    # Week 6 transparency: always say this is an AI suggestion, how sure it is, and why.
+    source = "rules (offline)" if t["method"] == "rules" else ("staff" if t["method"] == "staff" else f"AI ({t['method']})")
+    label = "✅ Checked by staff" if t["method"] == "staff" else "🤖 AI-suggested"
+    st.info(f"**{label}** · method: {source} · confidence: {t['confidence']:.0%}"
+            + (" · **low confidence: please check**" if t["confidence"] < 0.35 and t["method"] != "staff" else ""))
     with st.expander("Why was it classified this way?"):
-        st.write(f"**Method:** {t['method']} · **Confidence:** {t['confidence']:.0%}")
         st.write(t["reason"])
+        try:
+            history = api.ticket_audit(t["id"])
+        except api.ApiError:
+            history = []
+        fired = sorted({g for row in history for g in row["guardrails"]})
+        if fired:
+            st.write("**Safety guardrails applied:** " + ", ".join(fired))
 with right:
     st.metric("Category", categories[t["category"]])
     st.metric("Routed to", roles.get(t["routed_role"], t["routed_role"]))
@@ -104,3 +118,118 @@ with right:
         else:
             st.success(f"{t['reference']} is now '{statuses[new_status]}'.")
             st.rerun()
+
+    # ---- Week 6: correct the AI (human override) ------------------------------
+    with st.expander("✏️ Correct the AI"):
+        st.caption("Your correction is logged. Child-safety rules still apply: a safety ticket cannot be "
+                   "lowered, but you can resolve it once it is handled.")
+        cats = list(categories)
+        new_cat = st.selectbox("Category", cats, index=cats.index(t["category"]),
+                               format_func=lambda c: categories[c], key=f"cc_{t['id']}")
+        new_urg = st.selectbox("Urgency", urgencies, index=urgencies.index(t["urgency"]), key=f"cu_{t['id']}")
+        why = st.text_input("Reason for the change", key=f"cr_{t['id']}")
+        changed = new_cat != t["category"] or new_urg != t["urgency"]
+        if st.button("Save correction", disabled=not (changed and why and staff_name), key=f"cb_{t['id']}"):
+            try:
+                out = api.correct_classification(
+                    t["id"], staff_name, why,
+                    category=new_cat if new_cat != t["category"] else None,
+                    urgency=new_urg if new_urg != t["urgency"] else None)
+            except api.ApiError as err:
+                st.error(str(err))
+            else:
+                if out["note"]:
+                    st.warning(out["note"])
+                else:
+                    st.success("Correction saved.")
+                st.rerun()
+        if not staff_name:
+            st.caption("Type your name in the sidebar first.")
+
+# ---- Week 6: reply to the parent -----------------------------------------
+st.divider()
+st.subheader("✉️ Reply to the parent")
+st.caption("Drafts use only the school's own facts (config/school_info.yaml). Nothing is sent until "
+           "a staff member approves it; sending arrives in Week 7.")
+try:
+    existing = api.replies(t["id"])
+except api.ApiError as err:
+    st.error(str(err))
+    existing = []
+
+c1, c2 = st.columns([1, 3])
+tone = c1.selectbox("Tone", ["formal", "friendly", "urgent"], key=f"tone_{t['id']}")
+if c1.button("Draft a reply", key=f"draft_{t['id']}"):
+    try:
+        api.draft_reply(t["id"], tone)
+    except api.ApiError as err:
+        st.error(str(err))
+    else:
+        st.rerun()
+
+for reply in reversed(existing):
+    box = c2.container(border=True)
+    by = "template" if reply["method"] == "template" else f"AI ({reply['method']}), fact-checked"
+    status = "✅ Approved by " + (reply["approved_by"] or "?") if reply["status"] == "approved" else "📝 Draft"
+    box.markdown(f"**{status}** · {reply['tone']} · written by {by}" + (" · edited by staff" if reply["edited"] else ""))
+    if reply["acknowledgement_only"]:
+        box.warning("Learner welfare/safety: acknowledgement only. A person must follow up personally.")
+    for note in filter(None, reply["notes"].split("\n")):
+        box.caption("ℹ️ " + note)
+    if reply["status"] == "draft":
+        text = box.text_area("Reply text", reply["body"], height=260, key=f"body_{reply['id']}")
+        b1, b2 = box.columns(2)
+        if b1.button("Save edits", disabled=text == reply["body"] or not staff_name, key=f"save_{reply['id']}"):
+            try:
+                api.edit_reply(reply["id"], text, staff_name)
+            except api.ApiError as err:
+                box.error(str(err))
+            else:
+                st.rerun()
+        if b2.button("Approve", type="primary", disabled=not staff_name or text != reply["body"],
+                     key=f"approve_{reply['id']}"):
+            try:
+                api.approve_reply(reply["id"], staff_name)
+            except api.ApiError as err:
+                box.error(str(err))
+            else:
+                st.rerun()
+        if not staff_name:
+            box.caption("Type your name in the sidebar to edit or approve.")
+        elif text != reply["body"]:
+            box.caption("Save your edits before approving.")
+    else:
+        box.text(reply["body"])
+
+# ---- Week 6: audit trail and privacy -------------------------------------
+with st.expander("🧾 Audit trail for this ticket"):
+    try:
+        rows = api.ticket_audit(t["id"])
+    except api.ApiError as err:
+        st.error(str(err))
+        rows = []
+    if rows:
+        st.dataframe(pd.DataFrame([{
+            "When (UTC)": r["created_at"][:16].replace("T", " "),
+            "What": r["feature"].replace("_", " "),
+            "By": r["actor"] or r["method"],
+            "AI used": "yes" if r["llm_used"] else "no",
+            "Guardrails": ", ".join(r["guardrails"]) or "-",
+            "Personal data masked": ", ".join(f"{k} ×{v}" for k, v in r["pii_found"].items()) or "-",
+            "Note": r["fallback_reason"] or "",
+        } for r in rows]), hide_index=True, width="stretch")
+    else:
+        st.write("No AI decisions recorded for this ticket (e.g. demo history).")
+
+with st.expander("🔒 Privacy (POPIA)"):
+    st.caption("Removes the parent's name and contact details and masks ID numbers, phone numbers and "
+               "emails in the message. The ticket stays for statistics. This cannot be undone.")
+    confirm = st.checkbox("I confirm the parent asked for their personal data to be removed", key=f"anon_{t['id']}")
+    if st.button("Anonymise this ticket", disabled=not (confirm and staff_name), key=f"anonb_{t['id']}"):
+        try:
+            out = api.anonymise(t["id"], staff_name)
+        except api.ApiError as err:
+            st.error(str(err))
+        else:
+            st.success("Personal data removed: " + (", ".join(out["removed"]) or "nothing found"))
+

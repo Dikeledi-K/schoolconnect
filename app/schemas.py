@@ -128,3 +128,75 @@ class Stats(BaseModel):
     by_urgency: dict[str, int]
     by_language: dict[str, int]
     open_critical: int
+
+
+# --------------------------------------------------------------------------
+# Week 6: replies, staff corrections, audit log
+# --------------------------------------------------------------------------
+ToneCode = Literal["formal", "friendly", "urgent"]
+
+
+class ResponseCreate(BaseModel):
+    tone: ToneCode = "formal"
+
+
+class ResponseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    ticket_id: int
+    tone: str
+    language: str
+    body: str
+    original_body: str
+    method: str
+    acknowledgement_only: bool
+    status: str
+    edited: bool
+    notes: str
+    created_at: datetime
+    approved_at: datetime | None
+    approved_by: str | None
+
+
+class ResponseEdit(BaseModel):
+    body: str = Field(min_length=1, max_length=4000)
+    actor: str = Field(min_length=1, max_length=120, description="Staff member making the change")
+
+
+class ResponseApprove(BaseModel):
+    approved_by: str = Field(min_length=1, max_length=120)
+
+
+class ClassificationCorrection(BaseModel):
+    """A staff member corrects the AI. At least one of category/urgency must be given."""
+
+    category: CategoryCode | None = None
+    urgency: UrgencyCode | None = None
+    actor: str = Field(min_length=1, max_length=120)
+    reason: str = Field(min_length=3, max_length=300)
+
+
+class CorrectionResult(BaseModel):
+    ticket: TicketOut
+    guardrails_applied: list[str]
+    note: str | None = None
+
+
+class AuditOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    feature: str
+    ticket_id: int | None
+    method: str
+    model: str | None
+    llm_used: bool
+    fallback_reason: str | None
+    input_hash: str | None
+    output: dict
+    guardrails: list
+    pii_found: dict
+    human_override: bool
+    actor: str | None

@@ -2,7 +2,7 @@
 
 Flow:
     message
-      -> LLM (if configured)  --fails/invalid-->  rules
+      -> PII masked (Week 6) -> LLM (if configured)  --fails/invalid-->  rules
       -> safety guardrails (can only RAISE urgency, never lower it)
       -> ClassificationResult
 """
@@ -12,6 +12,7 @@ from __future__ import annotations
 from app.classifier.llm import classify_with_llm
 from app.classifier.rules import classify_with_rules, find_safety_terms
 from app.config import Settings, get_settings
+from app.privacy.pii import mask_pii
 from app.schemas import ClassificationResult
 from app.taxonomy import CATEGORIES, WELFARE_CATEGORY, max_urgency
 
@@ -19,10 +20,17 @@ from app.taxonomy import CATEGORIES, WELFARE_CATEGORY, max_urgency
 LOW_CONFIDENCE_THRESHOLD = 0.35
 
 
-def classify_message(message: str, settings: Settings | None = None) -> ClassificationResult:
+def classify_message(message: str, settings: Settings | None = None,
+                     names: list[str] | None = None) -> ClassificationResult:
+    """Classify a parent message.
+
+    names: names we already know (e.g. the parent_name field), masked along with IDs, phone
+    numbers and emails before anything is sent to an LLM. The rules classifier and the safety
+    guardrails run locally on the original text, so masking never weakens child safety.
+    """
     settings = settings or get_settings()
 
-    llm_answer = classify_with_llm(message, settings)
+    llm_answer = classify_with_llm(mask_pii(message, names).text, settings)
     if llm_answer is not None:
         category = llm_answer["category"]
         result = ClassificationResult(

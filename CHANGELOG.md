@@ -2,6 +2,33 @@
 
 All notable changes, one section per bootcamp week.
 
+## [week-6] 2026-10-26: AI Risk & Compliance Layer
+
+### Added
+- Reply drafts (from the skipped Week 2): `config/school_info.yaml` (fictional demo school),
+  `app/responses/` templates in three tones, optional AI rewrite with a grounding check,
+  acknowledgement-only replies for welfare/safety, staff edit and approval. `responses` table.
+- `app/privacy/pii.py`: masking of SA ID numbers (Luhn), phone numbers, emails, long numbers and known
+  names; applied before every LLM call and to all log records.
+- `ai_audit_log` table and `app/audit.py`; audit rows for classification, reply drafts, edits,
+  approvals, corrections, anonymisation and retention.
+- Staff corrections (`PATCH /tickets/{id}/classification`) with guardrails re-applied.
+- `app/risk/`: fairness checks, prompt-injection suite (`data/prompt_injection_cases.json`), risk
+  summary and PDF report (reportlab); `config/risk_register.yaml`.
+- `app/privacy/retention.py`, `POST /jobs/retention` (dry run by default), `POST /privacy/tickets/{id}/anonymise`.
+- Endpoints: replies (`/tickets/{id}/responses`, `/responses/{id}`, `/responses/{id}/approve`),
+  `/tickets/{id}/audit`, `/risk/summary`, `/risk/fairness`, `/risk/report.pdf`.
+- Streamlit: Staff inbox transparency notes, "Correct the AI", reply panel, audit trail, privacy action;
+  new *Risk and compliance* page.
+- `scripts/demo_week6.py`; `docs/POPIA.md`, `docs/weekly/WEEK_6.md`.
+- Setting `RETENTION_DAYS` (default 365). Dependency `reportlab`.
+- Tests: `test_pii.py`, `test_responses.py`, `test_prompt_injection.py`, `test_compliance_api.py`,
+  `test_fairness.py` (185 tests in total).
+
+### Changed
+- `classify_message()` takes `names=` and masks the text before the LLM call.
+- A corrected ticket's method becomes `staff` (confidence 1.0); the AI's original is in the audit log.
+
 ## [week-5] 2026-10-26: Predictive Insights Module
 
 Weeks 2–4 were skipped when the bootcamp schedule moved to Week 5 (see docs/ROADMAP.md).
