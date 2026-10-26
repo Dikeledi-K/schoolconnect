@@ -13,7 +13,7 @@ import os
 import requests
 import streamlit as st
 
-TIMEOUT_SECONDS = 20
+TIMEOUT_SECONDS = 60  # the first (uncached) forecast takes a few seconds
 
 
 class ApiError(Exception):
@@ -52,6 +52,9 @@ def _request(method: str, path: str, **kwargs):
         raise ApiError("The API rejected the request: check API_KEY in the frontend settings.")
     if response.status_code == 404:
         raise ApiError("Not found.")
+    if response.status_code == 409:
+        # e.g. "no ticket history yet" from the forecasting endpoints
+        raise ApiError(str(response.json().get("detail", "Not enough data yet.")))
     if response.status_code == 422:
         raise ApiError("Some of the information entered is not valid. Please check and try again.")
     if response.status_code >= 400:
@@ -101,3 +104,33 @@ def update_status(ticket_id: int, status: str) -> dict:
 
 def stats() -> dict:
     return _request("GET", "/stats")
+
+
+# ---- Week 5: forecasting -------------------------------------------------
+def _clean(params: dict) -> dict:
+    return {k: v for k, v in params.items() if v not in (None, "", "All")}
+
+
+def history(start: str | None = None, end: str | None = None, category: str | None = None) -> list[dict]:
+    return _request("GET", "/analytics/history", params=_clean({"start": start, "end": end, "category": category}))
+
+
+def forecast(days: int = 14, category: str | None = None, as_of: str | None = None) -> dict:
+    return _request("GET", "/forecast", params=_clean({"days": days, "category": category, "as_of": as_of}))
+
+
+def workload(days: int = 14, as_of: str | None = None, staff: str | None = None) -> dict:
+    return _request("GET", "/forecast/workload", params=_clean({"days": days, "as_of": as_of, "staff": staff}))
+
+
+def surges(days: int = 30, as_of: str | None = None) -> dict:
+    return _request("GET", "/forecast/surges", params=_clean({"days": days, "as_of": as_of}))
+
+
+def insights(days: int = 14, as_of: str | None = None, staff: str | None = None) -> dict:
+    return _request("GET", "/forecast/insights", params=_clean({"days": days, "as_of": as_of, "staff": staff}))
+
+
+def evaluation(as_of: str | None = None) -> dict:
+    return _request("GET", "/forecast/evaluation", params=_clean({"as_of": as_of}))
+

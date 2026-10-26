@@ -20,10 +20,10 @@ wait days for answers.
 | Week | Module | Status |
 |------|--------|--------|
 | 1 | System design & ticket classification engine | ✅ done |
-| 2 | Automated response generation | planned |
-| 3 | Data tracking & analytics dashboard | planned |
-| 4 | Business reporting automation | planned |
-| 5 | Predictive insights | planned |
+| 2 | Automated response generation | skipped (schedule change); minimal version in Week 6 |
+| 3 | Data tracking & analytics dashboard | skipped; history charts in Week 5 |
+| 4 | Business reporting automation | skipped (optional backlog) |
+| 5 | Predictive insights | ✅ done |
 | 6 | AI risk & compliance layer | planned |
 | 7 | Workflow automation & integration | planned |
 | 8 | Deployment & showcase | planned |
@@ -34,6 +34,25 @@ wait days for answers.
 - **Child-safety guardrails** on every result: abuse, missing children, weapons or self-harm are always `critical`, routed to the deputy principal, and flagged for a human.
 - Ticket API with reference numbers (`SC-YYYYMMDD-XXXX`), filters, status changes and stats.
 - Streamlit pages: *Send a message* (parents), *Staff inbox*, *Overview*.
+
+### What works now (Week 5: Predictive insights)
+- Forecasts parent messages per topic for the next 14–60 days, using the school calendar
+  (term starts, admissions windows, exams, report days, holidays) and ~24 months of synthetic history.
+- Converts the forecast into **staff hours per role** and flags who will be busy or overloaded, and when.
+- Spike alerts with the likely cause, plain-language recommendations, a "what if we add staff"
+  scenario, and an honest accuracy report.
+- **Backtest demo:** pretend it is 15 December 2025, forecast January, then compare with what really happened.
+
+## Forecast results (Week 5, synthetic history)
+| Measure | Result |
+|---|---|
+| Forecast error (WAPE), last 8 weeks | **22%** |
+| Simple "same as last week" rule | 39% |
+| January 2026 rush, forecast from 15 Dec 2025 | 16% error; 84% of days inside the 80% range |
+| Admin clerk, week of 19 Jan 2026 | forecast **86%** of capacity, actual **88%** |
+
+Full report: [docs/forecast_evaluation.md](docs/forecast_evaluation.md). How it works:
+[docs/FORECASTING.md](docs/FORECASTING.md).
 
 ## Evaluation results (rules classifier, 150 synthetic messages)
 | Metric | Result | Target |
@@ -61,6 +80,10 @@ pytest                                 # run the tests (no internet or API key n
 python scripts/seed_db.py --reset      # load 150 demo tickets
 python scripts/evaluate_classifier.py  # writes docs/classifier_evaluation.md
 
+# Week 5 forecasting demo (replaces the 150 demo tickets with ~24 months of history):
+python scripts/generate_history.py --reset
+python scripts/evaluate_forecast.py    # writes docs/forecast_evaluation.md
+
 uvicorn app.main:app --reload          # API on http://localhost:8000 (docs at /docs)
 streamlit run frontend/Home.py         # in a second terminal: UI on http://localhost:8501
 ```
@@ -70,7 +93,8 @@ Without a key the app silently uses the rules classifier.
 
 ## Project structure
 ```
-app/            FastAPI backend (taxonomy, classifier, models, API)
+app/            FastAPI backend (taxonomy, classifier, forecasting, models, API)
+config/         school calendar and staff workload settings (YAML)
 frontend/       Streamlit app (talks to the API over HTTP only)
 data/           synthetic sample messages
 scripts/        seed and evaluation scripts
@@ -83,8 +107,9 @@ docs/           architecture, roadmap, data, evaluation, weekly reports
 - [Roadmap](docs/ROADMAP.md)
 - [Sample data](docs/DATA.md)
 - [Classifier evaluation](docs/classifier_evaluation.md)
+- [How the forecasting works](docs/FORECASTING.md) · [Forecast evaluation](docs/forecast_evaluation.md)
 - [Changelog](CHANGELOG.md)
-- Weekly reports: [Week 1](docs/weekly/WEEK_1.md)
+- Weekly reports: [Week 1](docs/weekly/WEEK_1.md) · [Week 5](docs/weekly/WEEK_5.md)
 
 ## Live links
 _Coming in Week 8._

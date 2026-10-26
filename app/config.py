@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # If set, write endpoints require the header X-API-Key with this value.
     api_key: str = ""
 
+    # Required to call /jobs/* endpoints (header X-Jobs-Token). Jobs are disabled if empty.
+    jobs_token: str = ""
+
     # Comma-separated allowed origins for CORS.
     cors_origins: str = "http://localhost:8501"
 

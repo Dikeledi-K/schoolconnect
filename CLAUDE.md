@@ -41,6 +41,11 @@ progressively: each week adds a module (see `docs/ROADMAP.md`).
     `docs/weekly/WEEK_N.md` (built, curriculum outcome, rubric mapping, 5-min demo script,
     limitations, 3 retro questions); commit "Week N: <module>", tag `week-N`, push; STOP and
     summarise in under 10 bullets.
+11. Commits are authored by the developer only. Never add AI co-author or attribution trailers.
+
+## Schedule note
+The bootcamp moved from Week 1 straight to Week 5; Weeks 2–4 were skipped (see docs/ROADMAP.md).
+Week 6 therefore starts with a minimal response generator.
 
 ## Folder conventions
 ```
@@ -77,5 +82,7 @@ pytest
 uvicorn app.main:app --reload
 python scripts/seed_db.py
 python scripts/evaluate_classifier.py
+python scripts/generate_history.py --reset   # Week 5: ~24 months of synthetic history
+python scripts/evaluate_forecast.py          # Week 5: writes docs/forecast_evaluation.md
 streamlit run frontend/Home.py
 ```

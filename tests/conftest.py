@@ -64,3 +64,64 @@ def set_env(monkeypatch):
 
     yield _set
     get_settings.cache_clear()
+
+
+# --------------------------------------------------------------------------
+# Week 5 forecasting fixtures: ~15 months of synthetic history, built once.
+# --------------------------------------------------------------------------
+
+HISTORY_START, HISTORY_END = "2024-11-01", "2026-02-01"
+DEMO_AS_OF = "2025-12-15"   # forecast the January 2026 opening rush from mid-December
+
+
+@pytest.fixture(scope="session")
+def history_sessionmaker(tmp_path_factory):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from sqlalchemy import insert
+
+    from app.models import Ticket
+    from app.synthetic import generate_tickets
+
+    path = tmp_path_factory.mktemp("history") / "history.db"
+    engine = create_engine(f"sqlite:///{path}", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    now = datetime(2026, 2, 2, 8, 0, tzinfo=ZoneInfo("Africa/Johannesburg"))
+    with Session() as db:
+        db.execute(insert(Ticket), generate_tickets(HISTORY_START, HISTORY_END, seed=7, now=now))
+        db.commit()
+    return Session
+
+
+@pytest.fixture
+def history_client(history_sessionmaker):
+    """API client wired to the synthetic-history database."""
+    from app.forecasting import service
+
+    service.clear_cache()
+
+    def override():
+        db = history_sessionmaker()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="session")
+def demo_bundle(history_sessionmaker):
+    """The full forecasting pipeline run from mid-December 2025 (shared by tests)."""
+    from app import crud
+    from app.forecasting import service
+
+    with history_sessionmaker() as db:
+        rows = crud.ticket_timestamps(db)
+    return service.compute_bundle(rows, DEMO_AS_OF)
+

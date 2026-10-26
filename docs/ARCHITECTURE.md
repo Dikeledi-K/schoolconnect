@@ -135,3 +135,59 @@ method, needs_human, safety_flag, reason, status, created_at, updated_at, resolv
 - **Strict, validated JSON.** Claude is called with a JSON-schema output format. Every field is checked against the taxonomy, and anything invalid falls back to rules.
 - **The official Anthropic SDK** is used for Claude. Gemini is called over plain HTTPS with `httpx` to avoid a large SDK, which matters for Vercel's function size limit.
 - **Frontend over HTTP only**, so it can be deployed separately (Streamlit Cloud) from the API (Vercel).
+
+## Week 5 additions: predictive insights
+
+```mermaid
+flowchart TB
+    T[("tickets table")] --> D["data.py<br/>daily counts per category<br/>(SA time, zero-filled)"]
+    C["config/school_calendar.yaml"] --> F["calendar.py<br/>daily flags: term start, exams,<br/>admissions, holidays, reports"]
+    D --> E["evaluate.py<br/>rolling backtest 4 × 14 days<br/>MAE / WAPE per method"]
+    F --> E
+    E --> M["choose method per category<br/>ML only if ≥2% better than baselines<br/>80% range from errors"]
+    M --> FO["forecast.py<br/>next 1–60 days"]
+    FO --> W["workload.py<br/>hours vs capacity per role"]
+    WY["config/workload.yaml"] --> W
+    FO --> S["surges.py<br/>spikes + likely cause"]
+    W --> I["insights.py<br/>plain-language actions (templates)"]
+    S --> I
+    FO --> R[("forecast_runs")]
+    I --> UI["Streamlit: Forecast and workload"]
+```
+
+`app/forecasting/service.py` runs this pipeline once per forecast date and caches it; the
+cache key includes the ticket count, so a new ticket triggers a fresh forecast. Endpoints only
+slice the cached result.
+
+| Part | File(s) | Responsibility |
+|---|---|---|
+| Calendar | `app/forecasting/calendar.py`, `config/school_calendar.yaml` | Daily yes/no flags from the (approximate) school calendar |
+| Data | `app/forecasting/data.py` | Tickets → daily counts per category in South African time |
+| Methods | `app/forecasting/models.py` | Same as last week, same day last year, recent average, gradient boosting |
+| Backtest | `app/forecasting/evaluate.py` | Leakage-free rolling backtest, method choice, 80% ranges |
+| Forecast | `app/forecasting/forecast.py` | Next 1–60 days per category and in total |
+| Workload | `app/forecasting/workload.py`, `config/workload.yaml` | Hours needed vs available per role; busy-week and staff scenarios |
+| Spikes | `app/forecasting/surges.py` | Days ≥ 1.5× a normal day, with cause and extra hours |
+| Insights | `app/forecasting/insights.py` | Template recommendations (cannot invent facts) |
+| Orchestration | `app/forecasting/service.py` | Pipeline, cache, API slices, stored runs |
+| History | `app/synthetic.py`, `scripts/generate_history.py` | Synthetic demo history |
+
+### Week 5 endpoints
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| GET | `/analytics/history` | API key* | Actual tickets per day (charts) |
+| GET | `/forecast` | API key* | Forecast rows with 80% range, method used; actuals in backtest view |
+| GET | `/forecast/workload` | API key* | Hours and utilisation per role, daily and weekly; `staff=admin_clerk:2` scenario |
+| GET | `/forecast/surges` | API key* | Expected spikes with likely cause |
+| GET | `/forecast/insights` | API key* | Plain-language recommendations |
+| GET | `/forecast/evaluation` | API key* | Backtest accuracy per method and category |
+| POST | `/jobs/refresh-forecast` | X-Jobs-Token | Recompute and store a forecast run (for the Week 8 scheduler) |
+
+All forecast endpoints accept `as_of=YYYY-MM-DD` (a past date gives the backtest view) and `days` (1–60).
+
+### Data model (Week 5)
+
+`forecast_runs`: id, created_at, as_of, horizon_days, chosen_models (JSON), metrics (JSON), forecast (JSON).
+The forecaster reads only `tickets.created_at` and `tickets.category`; no personal data.
+

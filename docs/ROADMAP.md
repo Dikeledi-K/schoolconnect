@@ -2,6 +2,10 @@
 
 One platform, built progressively. Tick each box only when it is built, tested and documented.
 
+> **Schedule change (Week 5):** the bootcamp moved straight from Week 1 to Week 5, so Weeks 2–4
+> were skipped. Their items stay below as optional backlog. What later weeks depend on is folded
+> in: Week 5 adds its own history charts, and Week 6 starts with a minimal response generator.
+
 ---
 
 ## Week 1 — System Design & Ticket Classification Engine
@@ -21,7 +25,7 @@ One platform, built progressively. Tick each box only when it is built, tested a
 - [x] Streamlit: "Send a message" (reference, category, urgency; critical shows 10111 / 112 notice), "Staff inbox" (filters, status change), "Overview"
 - [x] CI green; tests for taxonomy, classifier, guardrails, API
 
-## Week 2 — Automated Response Generation
+## Week 2 — Automated Response Generation *(skipped; optional backlog)*
 **Outcome:** the system classifies AND responds.
 
 - [ ] `config/school_info.yaml` — the ONLY source of facts (details, hours, term dates, exemption docs, admissions steps, contacts)
@@ -36,7 +40,7 @@ One platform, built progressively. Tick each box only when it is built, tested a
 - [ ] UI: suggested-reply panel in staff inbox; instant acknowledgement on parent page
 - [ ] Tests: no invented facts (dates/amounts must appear in school_info), tone differences, language matching, fallback
 
-## Week 3 — Data Tracking & Analytics Dashboard
+## Week 3 — Data Tracking & Analytics Dashboard *(skipped; history charts now in Week 5)*
 **Outcome:** measurable business insights.
 
 - [ ] `ticket_events` table (status changes, assignments, responses)
@@ -45,7 +49,7 @@ One platform, built progressively. Tick each box only when it is built, tested a
 - [ ] AI weekly insights from computed numbers only (deterministic template fallback), no personal data
 - [ ] Tests for every metric
 
-## Week 4 — Business Reporting Automation
+## Week 4 — Business Reporting Automation *(skipped; optional backlog)*
 **Outcome:** end-to-end reporting automation.
 
 - [ ] Weekly PDF (reportlab): executive summary, key metrics, charts, top issues, wins & concerns
@@ -58,17 +62,22 @@ One platform, built progressively. Tick each box only when it is built, tested a
 ## Week 5 — Predictive Insights
 **Outcome:** forward-looking decision-making.
 
-- [ ] `config/school_calendar.yaml`: term starts, admissions windows, exams, report days, holidays
-- [ ] 14-day daily volume forecast per category
-- [ ] Models: seasonal-naive baseline, moving average, scikit-learn regression (calendar + day-of-week features)
-- [ ] Backtest (MAE) vs baseline; only show the model if it beats the baseline
-- [ ] Projected workload per staff role + staffing suggestion
-- [ ] Forecast page with plain-language explanation
-- [ ] `docs/FORECASTING.md`
+- [x] `config/school_calendar.yaml` (APPROXIMATE, 2024–2027): terms, public holidays, admissions windows, placement offers, exams, report days
+- [x] ~24 months of synthetic, calendar-driven ticket history (`scripts/generate_history.py`, `app/synthetic.py`)
+- [x] 14-day (up to 60-day) daily volume forecast per category, with an 80% range
+- [x] Models: same as last week (seasonal naive), same day last year, recent average with weekday/holiday factors, scikit-learn gradient boosting (calendar + day-of-week + last-year features)
+- [x] Rolling backtest (MAE and WAPE, 4 × 14 days, no data leakage); ML only used where it beats the best baseline by ≥ 2%
+- [x] Projected workload per staff role (`config/workload.yaml`), busy-week scenario, staff "what if" scenario, staffing suggestions
+- [x] Spike detection with likely calendar cause and extra staff hours
+- [x] `forecast_runs` table + protected `POST /jobs/refresh-forecast` (X-Jobs-Token)
+- [x] Forecast & workload page with backtest demo view and plain-language explanation
+- [x] `docs/FORECASTING.md`, `docs/forecast_evaluation.md`, `docs/weekly/WEEK_5.md`
+- [x] Tests for calendar, data, models, backtest leakage, model choice, workload maths, surges, insights, API
 
 ## Week 6 — AI Risk & Compliance Layer
 **Outcome:** ethical and compliance awareness layer.
 
+- [ ] Minimal response generator first (Week 2 was skipped): grounded in `config/school_info.yaml`, tone control, template fallback, staff approval, welfare = acknowledgement only
 - [ ] `app/privacy/pii.py`: SA ID (13 digits + Luhn), SA phones (0xx / +27), emails, names from name fields
 - [ ] Masker applied before every LLM call and in all logs
 - [ ] `ai_audit_log` table: timestamp, feature, method/model, masked input hash, output, guardrails, human override

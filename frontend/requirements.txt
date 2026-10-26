@@ -1,5 +1,6 @@
 # Frontend only (Streamlit Community Cloud installs this file).
 # The frontend talks to the API over HTTP and never imports backend code.
-streamlit>=1.36
+streamlit>=1.46
 requests>=2.31
 pandas>=2.0
+plotly>=5.20

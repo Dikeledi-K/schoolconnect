@@ -134,3 +134,8 @@ def get_stats(db: Session) -> dict:
         "by_language": _count_by(db, Ticket.language, list(LANGUAGES)),
         "open_critical": open_critical or 0,
     }
+
+
+def ticket_timestamps(db: Session) -> list[tuple[datetime, str]]:
+    """(created_at, category) for every ticket. Week 5 forecasting only needs these two fields."""
+    return list(db.execute(select(Ticket.created_at, Ticket.category)).all())

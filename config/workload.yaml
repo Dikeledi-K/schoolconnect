@@ -1,0 +1,32 @@
+# How long staff spend on each kind of ticket, and how much time they have.
+# A real school adjusts these numbers after timing a sample of tickets.
+
+handling_minutes:          # average minutes of staff time per ticket
+  admissions: 15
+  fees_exemptions: 20
+  academic: 10
+  learner_welfare: 45
+  transport: 8
+  it_portal: 12
+  other: 5
+
+staff:                     # people per role available for ticket work
+  admin_clerk: 1
+  finance_clerk: 1
+  class_teacher: 3         # teachers sharing parent queries (part of their day)
+  deputy_principal: 1
+  it_support: 1
+
+hours_per_day:             # hours per person per office day spent on parent tickets
+  admin_clerk: 4           # (the rest of the day goes to other admin work)
+  finance_clerk: 4
+  class_teacher: 1
+  deputy_principal: 2
+  it_support: 4
+
+# During school holidays the office is open with reduced hours.
+holiday_capacity_factor: 0.5
+
+# Utilisation thresholds for status labels.
+busy_threshold: 0.8        # 80% and above = busy
+overload_threshold: 1.0    # above 100% = overloaded

@@ -20,6 +20,7 @@ st.markdown(
 )
 st.page_link("pages/1_Send_a_message.py", label="Parents: send a message", icon="✉️")
 st.page_link("pages/2_Staff_inbox.py", label="Staff: open the inbox", icon="📥")
+st.page_link("pages/3_Forecast_and_workload.py", label="Principal: forecast & staff workload", icon="📈")
 
 st.divider()
 st.subheader("Overview")
