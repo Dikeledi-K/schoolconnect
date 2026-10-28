@@ -2,6 +2,55 @@
 
 All notable changes, one section per bootcamp week.
 
+## [week-7] 2026-10-28: Workflow Automation & System Integration
+
+### Added
+- Staff accounts and login (`app/auth/`): PBKDF2-SHA256 passwords (stdlib, per-user salt,
+  `PASSWORD_HASH_ITERATIONS`, default 600 000), 15-minute lockout after 5 failures, 8-hour bearer
+  tokens stored as SHA-256 hashes. `POST /auth/login`, `/auth/logout`, `GET /auth/me`, `GET /staff`.
+  `scripts/create_staff.py`. Tables `staff`, `staff_sessions`. Role `principal` in `app/taxonomy.py`
+  (`ACCOUNT_ROLES`, `SENIOR_ROLES`).
+- Least-privilege access (`app/auth/access.py`): own role or assigned tickets; learner-welfare and
+  safety tickets for the deputy principal and principal only; forecast and risk endpoints for those
+  two roles only; hidden tickets answer 404.
+- `ticket_events` table and `app/workflow/events.py`; `GET /tickets/{id}/events`;
+  `POST /tickets/{id}/assign` (reassignment, logged and notified).
+- Idempotent startup migration `app/db.py: migrate()` (ALTER TABLE ADD COLUMN for missing columns;
+  SQLite and Postgres). New ticket columns: `assigned_to`, `first_response_at`, `escalation_level`,
+  `escalated_at`.
+- One intake path for every channel (`app/workflow/intake.py`) and auto-assignment by least open
+  hours (`app/workflow/assignment.py`, handling minutes from `config/workload.yaml`).
+- `config/workflow.yaml` and `app/workflow/sla.py`: first-response targets matching
+  `school_info.yaml`, school days and office hours from the Week 5 calendar; SLA on every ticket;
+  `GET /workflow/my-work`.
+- `app/workflow/escalation.py` and `POST /jobs/escalate` (X-Jobs-Token): one level up the chain,
+  idempotent, 30-minute critical alert to the deputy principal and principal; events + audit rows.
+- Outbox notifications (`app/notify/`, `outbox` table): `NOTIFY_MODE=dry_run|smtp`, SMTP settings,
+  phone contacts `not_supported`; approved replies are sent; resolved and fee-decision letters to
+  parents; staff alerts with no message text or personal details. `GET /tickets/{id}/outbox`.
+- Fee exemption workflow (`app/workflow/fee_exemption.py`, `app/api/fees.py`, `fee_exemptions`
+  table): submitted → finance review → principal decision → approved/declined → parent notified.
+- Signed inbound webhook `POST /integrations/inbound-message` (HMAC-SHA256 over `timestamp.body`,
+  `INBOUND_SECRET`, 5-minute replay window); `docs/INTEGRATIONS.md`.
+- Streamlit: `frontend/auth.py` (login form, `require_login(roles=...)`, logout), new pages *My work*
+  and *Fee exemptions*; inbox shows assignee, SLA, timeline, reassignment and delivery status;
+  parent "Check my message" with plain-language status and reply status.
+- `scripts/demo_week7.py`; `docs/weekly/WEEK_7.md`.
+- Tests: `test_auth.py`, `test_migration_and_events.py`, `test_notifications.py`, `test_assignment.py`,
+  `test_sla_escalation.py`, `test_fee_exemption.py`, `test_inbound.py`, `test_frontend_api_client.py`
+  (326 tests in total).
+
+### Changed
+- Staff endpoints need `Authorization: Bearer <token>` (the optional `API_KEY` still applies on top).
+  Parent endpoints (`POST /tickets`, `GET /tickets/by-reference/...`) are unchanged.
+- Typed-in `actor` / `approved_by` fields are optional and ignored: the logged-in staff member is recorded.
+- `GET /tickets/by-reference/...` also returns `reply_status`; `TicketOut` has `assigned_to`,
+  `first_response_at`, `escalation_level` and `sla`; `ResponseOut` has `delivery_status`.
+- Retention / anonymisation also cleans outbox rows.
+- Frontend pages renumbered (1 Send, 2 My work, 3 Staff inbox, 4 Fee exemptions, 5 Forecast, 6 Risk);
+  "warm & friendly" theme (`.streamlit/config.toml`, `frontend/ui.py`).
+- CI also installs `frontend/requirements.txt` (for the api_client tests). API version 0.7.0.
+
 ## [week-6] 2026-10-26: AI Risk & Compliance Layer
 
 ### Added

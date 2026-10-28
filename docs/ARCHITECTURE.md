@@ -7,7 +7,7 @@ Solid boxes with a ✅ exist now. The other boxes are planned for the week shown
 ```mermaid
 flowchart LR
     subgraph Users
-        P[Parent<br/>web form / WhatsApp later]
+        P[Parent<br/>web form / email / WhatsApp gateway]
         S[School staff]
         PR[Principal & SGB]
     end
@@ -18,20 +18,21 @@ flowchart LR
         F3["✅ Overview"]
         F4["W3 Analytics dashboard"]
         F5["W4 Reports"]
-        F6["W5 Forecast"]
-        F7["W7 Staff login"]
+        F6["✅ W5 Forecast"]
+        F7["✅ W7 Staff login, My work,<br/>Fee exemptions"]
     end
 
     subgraph API["FastAPI backend (Vercel)"]
         A1["✅ Tickets API<br/>/tickets /stats /taxonomy"]
         A2["✅ W1 Classifier<br/>rules + LLM + safety guardrails"]
-        A3["W2 Response generator<br/>templates + LLM, grounded"]
+        A3["✅ W6 Response generator<br/>templates + LLM, grounded"]
         A4["W3 Analytics & insights"]
         A5["W4 PDF reports"]
-        A6["W5 Forecasting<br/>pandas + scikit-learn"]
-        A7["W6 PII masker + AI audit log"]
-        A8["W7 Workflow: assignment,<br/>SLA escalation, notifications,<br/>fee exemption approvals"]
-        J["W4/W7 /jobs/* endpoints"]
+        A6["✅ W5 Forecasting<br/>pandas + scikit-learn"]
+        A7["✅ W6 PII masker + AI audit log"]
+        A8["✅ W7 Workflow: assignment,<br/>SLA escalation, notifications,<br/>fee exemption approvals"]
+        A9["✅ W7 Signed inbound webhook"]
+        J["✅ /jobs/* endpoints"]
     end
 
     subgraph Data
@@ -41,9 +42,11 @@ flowchart LR
 
     LLM["LLM provider (optional)<br/>Anthropic Claude / Gemini"]
     CRON["W8 Scheduler<br/>Vercel Cron / GitHub Actions"]
-    MAIL["W7 Email (SMTP / Resend)<br/>dry_run outbox by default"]
+    MAIL["✅ W7 Email (SMTP)<br/>dry_run outbox by default"]
 
     P --> F1
+    P -.gateway.-> A9
+    A9 --> A1
     S --> F2
     PR --> F5
     F1 & F2 & F3 & F4 & F5 & F6 -->|HTTP only| A1
@@ -260,3 +263,113 @@ flowchart TB
 
 New tables are created automatically on startup; existing tables are unchanged, so a Week 5
 database keeps working.
+
+
+## Week 7 additions: workflow automation & system integration
+
+### One message, end to end
+
+```mermaid
+flowchart TB
+    WEB["Parent: web form<br/>POST /tickets"] --> IN
+    GW["Email / WhatsApp gateway<br/>POST /integrations/inbound-message<br/>HMAC signature + 5-min window"] --> IN
+    IN["workflow/intake.py<br/>ONE path for every channel"] --> CL["W6 mask → W1 classify<br/>→ guardrails → audit row"]
+    CL --> T[("tickets")]
+    CL --> AS["workflow/assignment.py<br/>welfare/critical → deputy principal<br/>else least open hours in routed role"]
+    AS -->|event: assigned| EV[("ticket_events")]
+    AS --> OB["notify/outbox.py<br/>dry_run | smtp | not_supported"]
+    OB --> OX[("outbox")]
+    AS --> MW["Staff: My work / inbox<br/>SLA badge from workflow/sla.py"]
+    MW -->|start / approve reply| FR["first_response_at<br/>(stops the clock)"]
+    MW -->|approve reply| OB
+    MW -->|resolve| OB
+    CRON["Scheduler (Week 8)"] -->|"POST /jobs/escalate<br/>X-Jobs-Token"| ES["workflow/escalation.py"]
+    ES -->|"overdue: one level up the chain<br/>critical 30 min: alert deputy + principal"| EV
+    ES --> AU[("ai_audit_log")]
+    ES --> OB
+    FEE["Fees ticket"] --> FX["workflow/fee_exemption.py<br/>submitted → finance_review →<br/>principal_decision → approved/declined<br/>→ parent_notified"]
+    FX --> EV & AU
+    FX -->|template letter| OB
+```
+
+### Components
+
+| Part | File(s) | Responsibility |
+|---|---|---|
+| Passwords | `app/auth/passwords.py` | PBKDF2-SHA256, per-user salt, iterations in the hash, `compare_digest` |
+| Accounts & sessions | `app/auth/service.py` | Create staff, login with lockout (5 → 15 min), 8-hour tokens stored as SHA-256 |
+| Access rules | `app/auth/access.py`, `app/auth/deps.py` | Who may see which ticket; `current_staff`, `require_roles(...)` |
+| Migration | `app/db.py: migrate()` | Adds missing columns at startup (SQLite + Postgres), idempotent |
+| Events | `app/workflow/events.py` | Timeline rows; `exists()` keeps jobs idempotent |
+| Intake | `app/workflow/intake.py` | The one path for web + webhook messages |
+| Assignment | `app/workflow/assignment.py` | Least open hours (`config/workload.yaml`), tie-break, welfare routing, reassignment |
+| SLAs | `app/workflow/sla.py`, `config/workflow.yaml` | Due times on school days/office hours (Week 5 calendar); on_track/due_soon/overdue/met |
+| Escalation | `app/workflow/escalation.py` | One level up per breach; critical 30-minute alert; events + audit |
+| Notifications | `app/notify/outbox.py`, `app/notify/messages.py` | Outbox (dry run / SMTP); POPIA-safe staff alerts; parent letters from school facts |
+| Fee exemptions | `app/workflow/fee_exemption.py`, `app/api/fees.py` | Strict state machine, role checks (403), state checks (409) |
+| Inbound webhook | `app/integrations/inbound.py`, `app/api/integrations.py` | HMAC-SHA256 over `timestamp.body`, replay window |
+| Routers | `app/api/auth.py`, `app/api/workflow.py`, `app/api/fees.py`, `app/api/integrations.py` | Keep `main.py` small |
+| Frontend | `frontend/auth.py`, `pages/2_My_work.py`, `pages/4_Fee_exemptions.py` | Login, role guard, quick actions, approval queues |
+
+### Access from Week 7
+
+Every endpoint marked "API key*" in the Week 1, 5 and 6 tables now **also needs a staff login**
+(`Authorization: Bearer <token>`), and only returns tickets that person may see:
+
+| Role | Tickets | Forecast & risk | Fee steps |
+|---|---|---|---|
+| Principal | all | yes | final decision, letter |
+| Deputy principal | own role, assigned to them, **all welfare/safety** | yes | – |
+| Finance clerk | own role (fees) or assigned, never welfare | no | review, checklist, recommendation, letter |
+| Admin clerk / class teacher / IT support | own role or assigned, never welfare | no | – |
+| Parent (no login) | `POST /tickets`, `GET /tickets/by-reference/{ref}` (status + reply status only) | no | – |
+
+### Week 7 endpoints
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| POST | `/auth/login` | public | Email + password → 8-hour bearer token (423 when locked) |
+| POST | `/auth/logout` | staff | End this session |
+| GET | `/auth/me` | staff | Who am I |
+| GET | `/staff` | staff | Colleagues (for reassignment) |
+| GET | `/workflow/my-work` | staff | My open tickets, overdue first, with SLA |
+| GET | `/tickets/{id}/events` | staff (visible ticket) | Timeline |
+| POST | `/tickets/{id}/assign` | staff (visible ticket) | Reassign (welfare only to senior staff) |
+| GET | `/tickets/{id}/outbox` | staff (visible ticket) | Notifications and their status |
+| POST | `/tickets/{id}/fee-exemption` | staff (visible fees ticket) | Start a request |
+| GET | `/fee-exemptions`, `/fee-exemptions/{id}` | finance clerk, principal | Queues |
+| POST | `/fee-exemptions/{id}/start-review` | finance clerk | submitted → finance_review |
+| PUT | `/fee-exemptions/{id}/checklist` | finance clerk | Tick documents |
+| POST | `/fee-exemptions/{id}/finance-decision` | finance clerk | Recommend approve/decline → principal_decision |
+| POST | `/fee-exemptions/{id}/principal-decision` | principal | approved / declined |
+| POST | `/fee-exemptions/{id}/notify-parent` | finance clerk, principal | Letter → parent_notified |
+| POST | `/integrations/inbound-message` | HMAC signature | Ticket from an email / WhatsApp gateway |
+| POST | `/jobs/escalate` | X-Jobs-Token | Escalate overdue tickets; critical alerts |
+
+`TicketOut` now includes `assigned_to`, `first_response_at`, `escalation_level` and `sla`;
+`ResponseOut` includes `delivery_status`; `TicketPublic` includes `reply_status`.
+
+### Data model (Week 7)
+
+- `staff`: id, name, email (unique), role, active, password_hash, failed_logins, locked_until, created_at.
+- `staff_sessions`: id, token_hash (SHA-256, unique), staff_id, expires_at, created_at.
+- `ticket_events`: id, ticket_id, type, from_value, to_value, actor, created_at.
+- `outbox`: id, recipient, channel, kind, subject, body, ticket_id, response_id, status
+  (dry_run / sent / failed / not_supported), error, created_at, sent_at.
+- `fee_exemptions`: id, ticket_id (unique), status, checklist (JSON), finance_decision, finance_note,
+  finance_by, finance_at, principal_decision, principal_by, principal_at, decline_reason, created_at.
+- `tickets` gains: assigned_to, first_response_at, escalation_level, escalated_at (added to older
+  databases by `migrate()` at startup).
+
+### Design decisions
+
+- **AI decisions vs workflow.** AI decisions stay in `ai_audit_log`; workflow steps go to
+  `ticket_events`. Escalations and fee decisions are written to both, because they are decisions the
+  principal may need to account for.
+- **Idempotent escalation.** A new owner gets a fresh response window, counted from `escalated_at`.
+  So a second run at the same moment finds nothing overdue, and no lock or "already done" table is
+  needed. Critical alerts are sent once, checked through `events.exists()`.
+- **Safe outbox by default.** `dry_run` is the default, so a demo or a test can never email a real
+  parent.
+- **Signed timestamp.** The webhook signs `timestamp.body`, not just the body. An old signature can
+  then not be replayed with a new timestamp.

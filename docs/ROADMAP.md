@@ -93,13 +93,17 @@ One platform, built progressively. Tick each box only when it is built, tested a
 ## Week 7 — Workflow Automation & System Integration
 **Outcome:** a fully integrated automation system.
 
-- [ ] Staff table with roles; login with hashed passwords + token auth; staff endpoints/pages protected; parent page public
-- [ ] Auto-assignment by category, role, workload
-- [ ] SLAs per urgency; protected `/jobs/escalate` (e.g. class_teacher → deputy_principal)
-- [ ] Notifications via SMTP or Resend behind `NOTIFY_MODE`; `dry_run` default writes to outbox table
-- [ ] Parent status updates by reference; staff assignment + escalation alerts
-- [ ] Fee exemption approval workflow: submitted → finance clerk review → principal approval → parent notified
-- [ ] UX polish: consistent styling, mobile-friendly, empty states, helpful errors
+- [x] Staff table with roles; login with hashed passwords (PBKDF2, lockout) + token auth; staff endpoints/pages protected; parent page public
+- [x] Least privilege: welfare tickets for deputy principal + principal only; forecast/risk for senior staff
+- [x] `ticket_events` table (replaces the skipped Week 3 one) and an idempotent startup migration
+- [x] Auto-assignment by category, role, workload (open hours from `config/workload.yaml`)
+- [x] SLAs per urgency on school days (`config/workflow.yaml`); protected, idempotent `/jobs/escalate` (e.g. class_teacher → deputy_principal); 30-minute critical alert
+- [x] Notifications via SMTP behind `NOTIFY_MODE`; `dry_run` default writes to outbox table (Resend not needed)
+- [x] Parent status updates by reference; staff assignment + escalation alerts (no PII in alerts)
+- [x] Fee exemption approval workflow: submitted → finance clerk review → principal approval → parent notified
+- [x] Signed inbound webhook for email / WhatsApp gateways (`docs/INTEGRATIONS.md`)
+- [x] UX polish: consistent styling, mobile-friendly, empty states, helpful errors
+- [x] `scripts/demo_week7.py`, tests (326 passing), `docs/weekly/WEEK_7.md`
 
 ## Week 8 — Deployment, Optimisation & Industry Showcase
 **Outcome:** deployed platform and portfolio.

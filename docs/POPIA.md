@@ -21,6 +21,10 @@ why, how long it is kept, who can see it, and how parents can exercise their rig
 | Classification | `tickets.category`, `urgency`, `language`… | yes | Routing, safety, statistics |
 | Reply drafts | `responses` | yes | Staff review before anything is sent |
 | AI audit log | `ai_audit_log` | yes | Accountability (see section 5) |
+| Notifications | `outbox` | yes | What was sent to whom, and whether it arrived (section 7b) |
+| Workflow timeline | `ticket_events` | yes | Who was assigned, status changes, escalations. No message text or contact details |
+| Fee exemption decisions | `fee_exemptions` | when requested | Document checklist, recommendation, decision, decline reason |
+| Staff accounts | `staff`, `staff_sessions` | yes | Name, work email, role, password **hash**, login **token hash** |
 
 SchoolConnect does **not** ask for ID numbers, but parents sometimes type them into messages. These
 are detected and masked before any external AI service sees the text (section 3).
@@ -70,21 +74,68 @@ decided and that a person reviewed it, without creating a second copy of persona
 - Rule: **resolved** tickets whose resolution is older than `RETENTION_DAYS` are **anonymised**:
   name and contact removed, personal data in the message (and its replies) masked. Category, dates,
   and urgency stay, so statistics and forecasts keep working.
+- Week 7: the same clean-up runs on the ticket's **outbox** rows. The parent's email or phone
+  number becomes `[REMOVED]` and personal data in the text is masked. The same happens when staff
+  anonymise a ticket on request.
 - Open tickets are never touched.
 - Job: `POST /jobs/retention` (requires `X-Jobs-Token`), **dry run by default**. Week 8 schedules it.
 - Each real run writes a `retention` row to the audit log.
 
 ## 7. Access control (condition 7: security safeguards)
 
-| Who | Can see |
-|---|---|
-| Anyone with a reference number | Only status, category, urgency and dates (no message, no personal data) |
-| Staff (frontend holds `API_KEY`) | Tickets, replies, audit trail, risk page |
-| Scheduler (`JOBS_TOKEN`) | Can trigger jobs only |
+Since Week 7 every staff member has their own login, so access is limited **by role**. The API
+enforces this on every request; the Streamlit pages only hide what the API would refuse anyway.
 
-Week 7 adds individual staff logins so access can be limited by role. Until then the API key is
-held only by the Streamlit server, never by parents. Secrets live in `.env`, never in git.
-Production uses Supabase Postgres (encrypted at rest) over TLS.
+| Who | Can see / do |
+|---|---|
+| Anyone with a reference number | Status, category, urgency, dates and whether a reply was sent. No message, no personal data |
+| Principal | Every ticket; forecast and risk pages; final fee exemption decisions |
+| Deputy principal | Tickets routed to or assigned to them, and **every learner-welfare / safety ticket**; forecast and risk pages |
+| Finance clerk, admin clerk, class teacher, IT support | Tickets routed to their role or assigned to them. **Never** learner-welfare / safety tickets. Finance clerk: fee exemption review steps |
+| Scheduler (`JOBS_TOKEN`) | Can trigger jobs only |
+| Gateway (`INBOUND_SECRET`) | Can create tickets only, with a signed request (`docs/INTEGRATIONS.md`) |
+
+How it is protected:
+
+- **Hidden tickets answer `404`.** A ticket someone may not see gets `404`, not `403`, so its
+  existence is not revealed.
+- **Welfare tickets stay with senior staff.** They are assigned automatically to the deputy
+  principal, and cannot be reassigned to anyone else except the principal.
+- **Passwords.** They are stored only as PBKDF2-SHA256 hashes, with a salt per user and 600 000
+  iterations. After 5 wrong passwords the account is locked for 15 minutes. A wrong email and a
+  wrong password give the same message.
+- **Login tokens.** A token lasts 8 hours. The database stores only its SHA-256 hash, so a copy of
+  the database cannot be used to log in. A deactivated account loses access immediately.
+- **Accountability.** Every action records the **logged-in** staff member. Nobody can type someone
+  else's name.
+- **Secrets.** Secrets live in `.env`, never in git. Demo passwords are typed at a prompt or passed
+  as a command argument, never stored.
+- **Hosting.** Production uses Supabase Postgres (encrypted at rest) over TLS.
+
+## 7b. Notifications: what leaves the school, and to whom
+
+All notifications go through the `outbox` table, which records the recipient, the text, and whether
+the message was sent (`dry_run`, `sent`, `failed` or `not_supported`).
+
+- **Default is dry run.** `NOTIFY_MODE=dry_run` records but sends nothing. Real email needs
+  `NOTIFY_MODE=smtp` and the school's own SMTP account.
+- **What parents receive:**
+  - the reply a staff member **approved**
+  - a "resolved" notice
+  - fee exemption letters
+
+  Letters are templates built from `config/school_info.yaml` only. They go to the contact the parent
+  gave, and only email is supported. Phone numbers are recorded as `not_supported` and staff phone
+  the parent.
+- **What staff alerts contain.** Alerts for assignment, escalation and new or unacknowledged
+  critical tickets contain only the **reference, category, urgency and response deadline**. They
+  never include the message text, the parent's name or contact details, or the learner's grade.
+  Email gets forwarded and read on shared phones, so the details stay behind the login.
+- **Welfare alerts contain only the reference:** *"New learner welfare ticket SC-…, open
+  SchoolConnect."* There is no category text, urgency or deadline.
+- **What the timeline records.** The `ticket_events` timeline records *that* a notification was
+  queued and its status. It never records the address or the text.
+- **SMTP errors are masked** before they are stored, because they can echo an email address back.
 
 ## 8. Data subject rights (sections 23–25)
 
@@ -105,6 +156,9 @@ the Information Regulator and affected parents as soon as reasonably possible. R
 - [ ] Replace `config/school_info.yaml` (fictional demo school) with real school details
 - [ ] Information Officer reviews this page and sets `RETENTION_DAYS`
 - [ ] Decide whether to enable an external AI; if so, check the provider terms (section 72)
-- [ ] Set `API_KEY` and `JOBS_TOKEN`; schedule the retention job
+- [ ] Set `API_KEY` and `JOBS_TOKEN`; schedule the retention and escalation jobs
+- [ ] Create one staff account per person (`scripts/create_staff.py`); deactivate leavers at once
+- [ ] Keep `NOTIFY_MODE=dry_run` until the SMTP account and the reply templates have been checked
+- [ ] If a gateway is connected, set a long random `INBOUND_SECRET` and share it only with that system
 - [ ] Review `config/risk_register.yaml` each term
 - [ ] First-language speakers review the isiZulu, Sesotho, Afrikaans and isiXhosa keywords

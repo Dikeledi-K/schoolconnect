@@ -8,7 +8,8 @@ SchoolConnect classifies each message, replies, routes it to the right staff
 member, tracks everything, forecasts busy periods, protects learner data under
 POPIA, and produces reports for the principal and SGB.
 
-> Status: **Week 1 of 8 complete**: classification engine, ticket API and a basic Streamlit app.
+> Status: **Weeks 1, 5, 6 and 7 complete** (Weeks 2–4 were skipped by the bootcamp schedule):
+> classification, forecasting, AI risk & compliance, and workflow automation. Week 8 deploys it.
 > See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## The problem
@@ -25,7 +26,7 @@ wait days for answers.
 | 4 | Business reporting automation | skipped (optional backlog) |
 | 5 | Predictive insights | ✅ done |
 | 6 | AI risk & compliance layer | ✅ done |
-| 7 | Workflow automation & integration | planned |
+| 7 | Workflow automation & integration | ✅ done |
 | 8 | Deployment & showcase | planned |
 
 ### What works now (Week 1)
@@ -53,6 +54,20 @@ wait days for answers.
   Staff corrections cannot lower a child-safety ticket.
 - **Fairness** by language and grade, a **prompt-injection suite** (23/23 checks pass), and a
   downloadable **risk evaluation PDF**.
+
+### What works now (Week 7: Workflow automation & integration)
+- **End to end with no copying:** received → classified → **auto-assigned** to the person in the
+  right role with the least open work → reply drafted → approved → **parent emailed** (through an
+  outbox; dry run by default) → **escalated automatically** if nobody responds in time.
+- **Staff logins** with roles. Least privilege: learner-welfare tickets are visible only to the
+  deputy principal and principal; staff see their own role's and their own tickets.
+- **Response-time targets** that match the school's promises (critical 1 hour; high/medium/low
+  1/2/5 school days, skipping weekends and public holidays), with "2 h left" / "overdue 3 h" badges.
+- **Fee exemption approvals:** finance clerk checks documents and recommends, principal decides,
+  parent gets a letter; every step logged.
+- **Integrations:** a signed webhook lets an email forwarder or WhatsApp gateway create tickets
+  ([docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)).
+- New pages: **My work** and **Fee exemptions**; parents can **check their message** by reference.
 
 ## Forecast results (Week 5, synthetic history)
 | Measure | Result |
@@ -95,6 +110,8 @@ python scripts/evaluate_classifier.py  # writes docs/classifier_evaluation.md
 python scripts/generate_history.py --reset
 python scripts/evaluate_forecast.py    # writes docs/forecast_evaluation.md
 python scripts/demo_week6.py           # Week 6: live tickets, corrections and replies for the demo
+python scripts/demo_week7.py --password "pick-a-demo-password"   # Week 7: demo staff + full workflow
+python scripts/create_staff.py --name "Mrs Pillay" --email pillay@school.example --role finance_clerk
 
 uvicorn app.main:app --reload          # API on http://localhost:8000 (docs at /docs)
 streamlit run frontend/Home.py         # in a second terminal: UI on http://localhost:8501
@@ -103,10 +120,14 @@ streamlit run frontend/Home.py         # in a second terminal: UI on http://loca
 To use Claude, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=...` in `.env`.
 Without a key the app silently uses the rules classifier.
 
+Staff pages need a login (the demo script prints the demo logins). Parents never log in.
+Notifications stay in the outbox (`NOTIFY_MODE=dry_run`) until you configure SMTP in `.env`.
+Set `JOBS_TOKEN` to use `POST /jobs/escalate`, and `INBOUND_SECRET` to enable the webhook.
+
 ## Project structure
 ```
-app/            FastAPI backend (taxonomy, classifier, forecasting, models, API)
-config/         school facts, calendar, staff workload and risk register (YAML)
+app/            FastAPI backend (taxonomy, classifier, forecasting, privacy, auth, workflow, notify, API)
+config/         school facts, calendar, staff workload, workflow rules and risk register (YAML)
 frontend/       Streamlit app (talks to the API over HTTP only)
 data/           synthetic sample messages
 scripts/        seed and evaluation scripts
@@ -121,8 +142,9 @@ docs/           architecture, roadmap, data, evaluation, weekly reports
 - [Classifier evaluation](docs/classifier_evaluation.md)
 - [How the forecasting works](docs/FORECASTING.md) · [Forecast evaluation](docs/forecast_evaluation.md)
 - [POPIA: how personal information is protected](docs/POPIA.md)
+- [Integrations: signed webhook for email / WhatsApp](docs/INTEGRATIONS.md)
 - [Changelog](CHANGELOG.md)
-- Weekly reports: [Week 1](docs/weekly/WEEK_1.md) · [Week 5](docs/weekly/WEEK_5.md) · [Week 6](docs/weekly/WEEK_6.md)
+- Weekly reports: [Week 1](docs/weekly/WEEK_1.md) · [Week 5](docs/weekly/WEEK_5.md) · [Week 6](docs/weekly/WEEK_6.md) · [Week 7](docs/weekly/WEEK_7.md)
 
 ## Live links
 _Coming in Week 8._
