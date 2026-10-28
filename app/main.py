@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.classifier import classify_message
-from app.config import get_settings
+from app.config import check_production_settings, get_settings
 from app.db import get_db, init_db
 from app.schemas import (
     CategoryCode,
@@ -79,13 +79,18 @@ SAFETY_NOTICE = (
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    init_db()  # create tables on startup
+    check_production_settings(get_settings())   # Week 8: refuse to start half-configured
+    init_db()  # create tables, then add any missing columns (idempotent)
     yield
 
 
 app = FastAPI(
     title="SchoolConnect API",
-    description="AI help desk for South African public schools.",
+    description=(
+        "AI help desk for South African public schools.\n\n"
+        "**Demo: fictional school, synthetic data.** \"Ubuntu Demo Primary School\" does not exist; "
+        "every parent, learner, staff member and message here is made up."
+    ),
     version="0.7.0",
     lifespan=lifespan,
 )

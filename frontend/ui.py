@@ -145,6 +145,12 @@ _CSS = """
 /* Section headings: warm brown, a little more space above */
 h2, h3 { color: #3b2a1a; font-weight: 800 !important; margin-top: 0.6rem; }
 
+/* Week 8: "this is a demo" strip under the page header */
+.sc-demo {
+  background: #fff7d6; border: 1px dashed #b45309; color: #3b2a1a; border-radius: 0.8rem;
+  padding: 0.45rem 0.9rem; margin: -0.6rem 0 1rem 0; font-size: 0.92rem;
+}
+
 /* Coloured urgency label, e.g. <span class="sc-pill" style="...">High</span> */
 .sc-pill {
   display: inline-block; padding: 0.15rem 0.7rem; border-radius: 999px;
@@ -161,6 +167,16 @@ def page(title: str, subtitle: str, icon: str, layout: str = "wide") -> None:
     # title/subtitle are fixed strings written in our own code, never user input.
     st.markdown(f'<div class="sc-hero"><h1>{icon} {title}</h1><p>{subtitle}</p></div>',
                 unsafe_allow_html=True)
+    demo_banner()
+
+
+DEMO_TEXT = ("🧪 <b>Demo: fictional school, synthetic data.</b> Ubuntu Demo Primary School does not exist; "
+             "every parent, learner, staff member and message here is made up.")
+
+
+def demo_banner() -> None:
+    """Week 8: always visible, so nobody mistakes the live demo for a real school."""
+    st.markdown(f'<div class="sc-demo" role="note">{DEMO_TEXT}</div>', unsafe_allow_html=True)
 
 
 def urgency_pill(urgency: str) -> str:

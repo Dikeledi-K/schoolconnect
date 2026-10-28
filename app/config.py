@@ -12,6 +12,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    # Week 8: "development" (default) or "production". In production the app refuses to start
+    # without the secrets that protect it (see check_production_settings below).
+    environment: str = "development"
+
     # Database: SQLite locally, Supabase Postgres in production.
     database_url: str = "sqlite:///./schoolconnect.db"
 
@@ -56,6 +60,30 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+
+PRODUCTION_MIN_PASSWORD_ITERATIONS = 600_000
+
+
+def check_production_settings(settings: Settings) -> None:
+    """Week 8: fail fast instead of running a public server with the doors open.
+
+    In production an empty API_KEY would let anyone create tickets from scripts, and an empty
+    JOBS_TOKEN would switch the scheduled jobs off. Weak password hashing is refused too.
+    """
+    if settings.environment != "production":
+        return
+    problems = []
+    if not settings.api_key:
+        problems.append("API_KEY is empty")
+    if not settings.jobs_token:
+        problems.append("JOBS_TOKEN is empty")
+    if settings.password_hash_iterations < PRODUCTION_MIN_PASSWORD_ITERATIONS:
+        problems.append(f"PASSWORD_HASH_ITERATIONS is below {PRODUCTION_MIN_PASSWORD_ITERATIONS}")
+    if settings.database_url.startswith("sqlite"):
+        problems.append("DATABASE_URL is SQLite (Render's disk is wiped on every restart)")
+    if problems:
+        raise RuntimeError("Refusing to start with ENVIRONMENT=production: " + "; ".join(problems))
 
 
 @lru_cache

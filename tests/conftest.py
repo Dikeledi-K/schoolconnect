@@ -18,6 +18,7 @@ os.environ["JOBS_TOKEN"] = ""
 os.environ["INBOUND_SECRET"] = ""
 os.environ["NOTIFY_MODE"] = "dry_run"
 os.environ["SMTP_HOST"] = ""
+os.environ["ENVIRONMENT"] = "development"   # Week 8: never the production start-up checks
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

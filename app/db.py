@@ -1,6 +1,15 @@
 """Database connection setup (SQLAlchemy 2.0).
 
 Only DATABASE_URL changes between SQLite (local) and Supabase Postgres (production).
+
+Week 8, production on Render + Supabase:
+- Render has no IPv6, and Supabase's direct connection is IPv6-only, so production uses
+  Supabase's shared POOLER (IPv4) in TRANSACTION mode, port 6543.
+- Transaction mode hands each transaction to any free server connection, so the database
+  cannot keep "prepared statements" for us. psycopg must not prepare them (prepare_threshold=None).
+- The API is one long-running process on one small instance, so a SMALL pool is enough:
+  3 connections + up to 2 extra under load, checked before use (pool_pre_ping) and
+  replaced every 5 minutes, because poolers close idle connections.
 """
 
 from collections.abc import Iterator
@@ -8,6 +17,7 @@ from collections.abc import Iterator
 from datetime import datetime
 
 from sqlalchemy import Column, create_engine, inspect, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import get_settings
@@ -17,12 +27,36 @@ class Base(DeclarativeBase):
     """Parent class for all ORM models."""
 
 
+TRANSACTION_POOLER_PORT = 6543
+
+
+def normalise_url(url: str) -> str:
+    """Supabase shows "postgresql://..." (or older "postgres://..."); tell SQLAlchemy to use psycopg 3."""
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
+def engine_options(url: str) -> dict:
+    """create_engine() keyword arguments for this database (a plain function, so it is testable)."""
+    url = normalise_url(url)
+    if url.startswith("sqlite"):
+        # SQLite needs check_same_thread=False because FastAPI may use the
+        # connection from a different thread than the one that created it.
+        return {"connect_args": {"check_same_thread": False}, "pool_pre_ping": True}
+    connect_args = {"connect_timeout": 10}
+    parsed = make_url(url)
+    if "sslmode" not in parsed.query:
+        connect_args["sslmode"] = "require"          # Supabase: always encrypted
+    if parsed.port == TRANSACTION_POOLER_PORT:
+        connect_args["prepare_threshold"] = None     # transaction pooler: no prepared statements
+    return {"connect_args": connect_args, "pool_pre_ping": True, "pool_size": 3,
+            "max_overflow": 2, "pool_recycle": 300, "pool_timeout": 30}
+
+
 def make_engine(url: str):
-    # SQLite needs check_same_thread=False because FastAPI may use the
-    # connection from a different thread than the one that created it.
-    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
-    # pool_pre_ping avoids errors from stale connections on hosted Postgres.
-    return create_engine(url, connect_args=connect_args, pool_pre_ping=True)
+    return create_engine(normalise_url(url), **engine_options(url))
 
 
 engine = make_engine(get_settings().database_url)
