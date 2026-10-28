@@ -1,0 +1,22 @@
+# Streamlit theme for SchoolConnect ("warm & friendly" design). Read automatically by
+# `streamlit run` from the repo root and by Streamlit Community Cloud. Colours only: no secrets here.
+
+[theme]
+base = "light"
+primaryColor = "#c2410c"              # warm orange: buttons, links, selected items (white text readable)
+backgroundColor = "#fffaf2"           # cream page so white cards stand out
+secondaryBackgroundColor = "#fdf0dc"  # inputs, table headers
+textColor = "#3b2a1a"                 # warm dark brown: softer than black, still high contrast
+linkColor = "#c2410c"
+borderColor = "#f3dcb8"
+showWidgetBorder = true
+baseRadius = "1rem"                   # extra-rounded corners feel friendly
+baseFontSize = 16
+# Nunito: a rounded, friendly Google Font (falls back to the system sans-serif if offline).
+font = "Nunito:https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"
+
+[theme.sidebar]
+backgroundColor = "#fff1dc"           # light peach sidebar
+secondaryBackgroundColor = "#ffffff"  # sidebar inputs (inbox filters) are white
+textColor = "#3b2a1a"
+borderColor = "#f3dcb8"
