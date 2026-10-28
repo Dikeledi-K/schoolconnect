@@ -71,9 +71,15 @@ def list_tickets(
     search: str | None = None,
     limit: int = 100,
     offset: int = 0,
+    visible=None,
 ) -> list[Ticket]:
-    """Newest first. Every filter is optional."""
+    """Newest first. Every filter is optional.
+
+    `visible` (Week 7) is the SQL rule for which tickets the logged-in staff member may see.
+    """
     query = select(Ticket)
+    if visible is not None:
+        query = query.where(visible)
     if status:
         query = query.where(Ticket.status == status)
     if category:

@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     # Week 6 (POPIA): resolved tickets older than this many days are anonymised by the retention job.
     retention_days: int = 365
 
+    # Week 7: staff passwords (PBKDF2-SHA256). 600 000 follows current OWASP advice;
+    # tests use a low value so they stay fast. The count is stored in each hash, so
+    # changing it later does not break existing passwords.
+    password_hash_iterations: int = 600_000
+
     # Comma-separated allowed origins for CORS.
     cors_origins: str = "http://localhost:8501"
 

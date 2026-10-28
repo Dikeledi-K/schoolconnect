@@ -159,13 +159,18 @@ class ResponseOut(BaseModel):
     approved_by: str | None
 
 
+# Week 7: the staff member is now the LOGGED-IN user. The old typed-in name fields are still
+# accepted (so older clients keep working) but ignored.
+IGNORED_NAME = "Ignored since Week 7: the logged-in staff member is recorded"
+
+
 class ResponseEdit(BaseModel):
     body: str = Field(min_length=1, max_length=4000)
-    actor: str = Field(min_length=1, max_length=120, description="Staff member making the change")
+    actor: str | None = Field(default=None, max_length=120, description=IGNORED_NAME)
 
 
 class ResponseApprove(BaseModel):
-    approved_by: str = Field(min_length=1, max_length=120)
+    approved_by: str | None = Field(default=None, max_length=120, description=IGNORED_NAME)
 
 
 class ClassificationCorrection(BaseModel):
@@ -173,7 +178,7 @@ class ClassificationCorrection(BaseModel):
 
     category: CategoryCode | None = None
     urgency: UrgencyCode | None = None
-    actor: str = Field(min_length=1, max_length=120)
+    actor: str | None = Field(default=None, max_length=120, description=IGNORED_NAME)
     reason: str = Field(min_length=3, max_length=300)
 
 
@@ -200,3 +205,28 @@ class AuditOut(BaseModel):
     pii_found: dict
     human_override: bool
     actor: str | None
+
+
+# --------------------------------------------------------------------------
+# Week 7: staff login
+# --------------------------------------------------------------------------
+class LoginRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=200)
+    password: str = Field(min_length=1, max_length=200)
+
+
+class StaffOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    email: str
+    role: str
+    active: bool
+
+
+class LoginResult(BaseModel):
+    token: str
+    token_type: str = "bearer"
+    expires_at: datetime
+    staff: StaffOut

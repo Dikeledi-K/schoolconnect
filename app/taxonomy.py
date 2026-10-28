@@ -38,6 +38,16 @@ STAFF_ROLES: dict[str, str] = {
     "it_support": "IT Support",
 }
 
+# Week 7: staff ACCOUNTS can also be the principal. The principal is not a routing role
+# (no category is routed there and the Week 5 workload model ignores it), but tickets
+# escalate to the principal and the principal sees everything.
+PRINCIPAL_ROLE = "principal"
+ACCOUNT_ROLES: dict[str, str] = {**STAFF_ROLES, PRINCIPAL_ROLE: "Principal"}
+
+# Least privilege (POPIA): only these roles may see learner-welfare tickets,
+# the forecast and the risk & compliance pages.
+SENIOR_ROLES: tuple[str, ...] = ("deputy_principal", PRINCIPAL_ROLE)
+
 
 # --------------------------------------------------------------------------
 # Categories
@@ -362,5 +372,6 @@ def taxonomy_as_dict() -> dict:
         "languages": [{"code": k, "name": v} for k, v in LANGUAGES.items()],
         "statuses": [{"code": s, "label": STATUS_LABELS[s]} for s in STATUSES],
         "staff_roles": [{"code": k, "name": v} for k, v in STAFF_ROLES.items()],
+        "account_roles": [{"code": k, "name": v} for k, v in ACCOUNT_ROLES.items()],
         "grades": GRADES,
     }

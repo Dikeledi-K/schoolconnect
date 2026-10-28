@@ -55,7 +55,11 @@ from app.schemas import (
     ResponseEdit,
     ResponseOut,
 )
-from app.taxonomy import CATEGORIES, STAFF_ROLES, taxonomy_as_dict
+from app.taxonomy import CATEGORIES, SENIOR_ROLES, STAFF_ROLES, taxonomy_as_dict
+from app.api import auth as auth_api
+from app.auth.access import can_see_ticket, visible_tickets_filter
+from app.auth.deps import current_staff, require_roles
+from app.models import Staff
 
 # Week 6 (POPIA): mask personal data in every log line, from the moment the app is imported.
 install_log_redaction()
@@ -75,7 +79,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(
     title="SchoolConnect API",
     description="AI help desk for South African public schools.",
-    version="0.5.0",
+    version="0.7.0",
     lifespan=lifespan,
 )
 
@@ -85,6 +89,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(auth_api.router)
 
 
 def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
@@ -135,7 +142,22 @@ def ticket_by_reference(reference: str, db: Session = Depends(get_db)):
 
 # --------------------------------------------------------------------------
 # Protected endpoints (write data or expose personal data)
+#
+# Week 7: staff endpoints need a logged-in staff member (Authorization: Bearer <token>)
+# and only show tickets that person may see (app/auth/access.py). A ticket you may not
+# see answers 404, not 403, so its existence is not revealed. The optional API key
+# (held by the Streamlit server) still applies on top.
 # --------------------------------------------------------------------------
+# Forecast and risk pages: principal and deputy principal only.
+SENIOR_ONLY = Depends(require_roles(*SENIOR_ROLES))
+
+
+def _ticket_or_404(db: Session, ticket_id: int, staff: Staff):
+    ticket = crud.get_ticket(db, ticket_id)
+    if ticket is None or not can_see_ticket(staff, ticket):
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
+
 @app.post(
     "/tickets",
     response_model=TicketCreated,
@@ -187,20 +209,18 @@ def list_tickets(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
+    staff: Staff = Depends(current_staff),
 ):
     return crud.list_tickets(
         db, status=status, category=category, urgency=urgency, language=language,
         routed_role=routed_role, needs_human=needs_human, search=search,
-        limit=limit, offset=offset,
+        limit=limit, offset=offset, visible=visible_tickets_filter(staff),
     )
 
 
 @app.get("/tickets/{ticket_id}", response_model=TicketOut, dependencies=[Depends(require_api_key)])
-def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
-    ticket = crud.get_ticket(db, ticket_id)
-    if ticket is None:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    return ticket
+def get_ticket(ticket_id: int, db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
+    return _ticket_or_404(db, ticket_id, staff)
 
 
 @app.patch(
@@ -208,10 +228,9 @@ def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
     response_model=TicketOut,
     dependencies=[Depends(require_api_key)],
 )
-def update_ticket_status(ticket_id: int, body: TicketStatusUpdate, db: Session = Depends(get_db)):
-    ticket = crud.get_ticket(db, ticket_id)
-    if ticket is None:
-        raise HTTPException(status_code=404, detail="Ticket not found")
+def update_ticket_status(ticket_id: int, body: TicketStatusUpdate, db: Session = Depends(get_db),
+                         staff: Staff = Depends(current_staff)):
+    ticket = _ticket_or_404(db, ticket_id, staff)
     return crud.update_status(db, ticket, body.status)
 
 
@@ -272,7 +291,7 @@ def _records(df: pd.DataFrame) -> list[dict]:
             for row in df.to_dict(orient="records")]
 
 
-@app.get("/analytics/history", tags=["forecasting"], dependencies=[Depends(require_api_key)])
+@app.get("/analytics/history", tags=["forecasting"], dependencies=[Depends(require_api_key), SENIOR_ONLY])
 def history(start: date | None = None, end: date | None = None, category: str | None = None,
             db: Session = Depends(get_db)) -> list[dict]:
     """Actual tickets per day (for charts)."""
@@ -283,7 +302,7 @@ def history(start: date | None = None, end: date | None = None, category: str | 
     return fc.history_rows(daily, start, end, category)
 
 
-@app.get("/forecast", tags=["forecasting"], dependencies=[Depends(require_api_key)])
+@app.get("/forecast", tags=["forecasting"], dependencies=[Depends(require_api_key), SENIOR_ONLY])
 def forecast(days: int = Query(14, ge=1, le=MAX_HORIZON), category: str | None = None,
              as_of: date | None = Query(None, description=AS_OF_HELP),
              db: Session = Depends(get_db)) -> dict:
@@ -301,7 +320,7 @@ def forecast(days: int = Query(14, ge=1, le=MAX_HORIZON), category: str | None =
     }
 
 
-@app.get("/forecast/workload", tags=["forecasting"], dependencies=[Depends(require_api_key)])
+@app.get("/forecast/workload", tags=["forecasting"], dependencies=[Depends(require_api_key), SENIOR_ONLY])
 def forecast_workload(days: int = Query(14, ge=1, le=MAX_HORIZON),
                       as_of: date | None = Query(None, description=AS_OF_HELP),
                       staff: str | None = Query(None, description="Scenario, e.g. admin_clerk:2,finance_clerk:1"),
@@ -315,7 +334,7 @@ def forecast_workload(days: int = Query(14, ge=1, le=MAX_HORIZON),
             "daily": _records(daily), "weekly": _records(weekly)}
 
 
-@app.get("/forecast/surges", tags=["forecasting"], dependencies=[Depends(require_api_key)])
+@app.get("/forecast/surges", tags=["forecasting"], dependencies=[Depends(require_api_key), SENIOR_ONLY])
 def forecast_surges(days: int = Query(30, ge=1, le=MAX_HORIZON),
                     as_of: date | None = Query(None, description=AS_OF_HELP),
                     db: Session = Depends(get_db)) -> dict:
@@ -324,7 +343,7 @@ def forecast_surges(days: int = Query(30, ge=1, le=MAX_HORIZON),
     return {"as_of": b["as_of"].date().isoformat(), "surges": fc.surges(b, days)}
 
 
-@app.get("/forecast/insights", tags=["forecasting"], dependencies=[Depends(require_api_key)])
+@app.get("/forecast/insights", tags=["forecasting"], dependencies=[Depends(require_api_key), SENIOR_ONLY])
 def forecast_insights(days: int = Query(14, ge=1, le=MAX_HORIZON),
                       as_of: date | None = Query(None, description=AS_OF_HELP),
                       staff: str | None = None, db: Session = Depends(get_db)) -> dict:
@@ -334,7 +353,7 @@ def forecast_insights(days: int = Query(14, ge=1, le=MAX_HORIZON),
     return {"as_of": b["as_of"].date().isoformat(), "insights": fc.insights(b, days, staff_override)}
 
 
-@app.get("/forecast/evaluation", tags=["forecasting"], dependencies=[Depends(require_api_key)])
+@app.get("/forecast/evaluation", tags=["forecasting"], dependencies=[Depends(require_api_key), SENIOR_ONLY])
 def forecast_evaluation(as_of: date | None = Query(None, description=AS_OF_HELP),
                         db: Session = Depends(get_db)) -> dict:
     """Backtest accuracy per method and category, and which method was chosen."""
@@ -352,63 +371,61 @@ def refresh_forecast(days: int = Query(60, ge=1, le=MAX_HORIZON), db: Session = 
 
 
 # --------------------------------------------------------------------------
-# Week 6: replies, staff corrections, audit, risk & compliance (staff only: API key)
+# Week 6: replies, staff corrections, audit, risk & compliance (logged-in staff)
 # --------------------------------------------------------------------------
-def _ticket_or_404(db: Session, ticket_id: int):
-    ticket = crud.get_ticket(db, ticket_id)
-    if ticket is None:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    return ticket
-
-
-def _response_or_404(db: Session, response_id: int):
+def _response_or_404(db: Session, response_id: int, staff: Staff):
     response = crud.get_response(db, response_id)
-    if response is None:
+    ticket = crud.get_ticket(db, response.ticket_id) if response else None
+    if response is None or ticket is None or not can_see_ticket(staff, ticket):
         raise HTTPException(status_code=404, detail="Reply not found")
     return response
 
 
 @app.post("/tickets/{ticket_id}/responses", response_model=ResponseOut, status_code=201,
           tags=["replies"], dependencies=[Depends(require_api_key)])
-def draft_response(ticket_id: int, body: ResponseCreate, db: Session = Depends(get_db)):
+def draft_response(ticket_id: int, body: ResponseCreate, db: Session = Depends(get_db),
+                   staff: Staff = Depends(current_staff)):
     """Draft a reply (template, or AI-rewritten and fact-checked). Staff must approve it."""
-    ticket = _ticket_or_404(db, ticket_id)
+    ticket = _ticket_or_404(db, ticket_id, staff)
     return crud.create_response(db, ticket, body.tone, generate_draft(ticket, body.tone))
 
 
 @app.get("/tickets/{ticket_id}/responses", response_model=list[ResponseOut], tags=["replies"],
          dependencies=[Depends(require_api_key)])
-def list_responses(ticket_id: int, db: Session = Depends(get_db)):
-    _ticket_or_404(db, ticket_id)
+def list_responses(ticket_id: int, db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
+    _ticket_or_404(db, ticket_id, staff)
     return crud.list_responses(db, ticket_id)
 
 
 @app.patch("/responses/{response_id}", response_model=ResponseOut, tags=["replies"],
            dependencies=[Depends(require_api_key)])
-def edit_response(response_id: int, body: ResponseEdit, db: Session = Depends(get_db)):
+def edit_response(response_id: int, body: ResponseEdit, db: Session = Depends(get_db),
+                  staff: Staff = Depends(current_staff)):
     try:
-        return crud.edit_response(db, _response_or_404(db, response_id), body.body, body.actor)
+        return crud.edit_response(db, _response_or_404(db, response_id, staff), body.body, staff.name)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
 
 
 @app.post("/responses/{response_id}/approve", response_model=ResponseOut, tags=["replies"],
           dependencies=[Depends(require_api_key)])
-def approve_response(response_id: int, body: ResponseApprove, db: Session = Depends(get_db)):
+def approve_response(response_id: int, body: ResponseApprove, db: Session = Depends(get_db),
+                     staff: Staff = Depends(current_staff)):
     try:
-        return crud.approve_response(db, _response_or_404(db, response_id), body.approved_by)
+        return crud.approve_response(db, _response_or_404(db, response_id, staff), staff.name)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
 
 
 @app.patch("/tickets/{ticket_id}/classification", response_model=CorrectionResult, tags=["compliance"],
            dependencies=[Depends(require_api_key)])
-def correct_classification(ticket_id: int, body: ClassificationCorrection, db: Session = Depends(get_db)):
+def correct_classification(ticket_id: int, body: ClassificationCorrection, db: Session = Depends(get_db),
+                           staff: Staff = Depends(current_staff)):
     """Staff correct the AI's category/urgency. Child-safety guardrails still apply."""
     if body.category is None and body.urgency is None:
         raise HTTPException(status_code=422, detail="Give a category, an urgency, or both")
-    ticket = _ticket_or_404(db, ticket_id)
-    ticket, applied = crud.correct_classification(db, ticket, body.category, body.urgency, body.actor, body.reason)
+    ticket = _ticket_or_404(db, ticket_id, staff)
+    ticket, applied = crud.correct_classification(db, ticket, body.category, body.urgency, staff.name, body.reason)
     note = None
     if applied:
         note = ("The child-safety guardrails kept this ticket at a safe level. "
@@ -418,35 +435,36 @@ def correct_classification(ticket_id: int, body: ClassificationCorrection, db: S
 
 @app.get("/tickets/{ticket_id}/audit", response_model=list[AuditOut], tags=["compliance"],
          dependencies=[Depends(require_api_key)])
-def ticket_audit(ticket_id: int, db: Session = Depends(get_db)):
+def ticket_audit(ticket_id: int, db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
     """Every AI decision and human override for one ticket (transparency)."""
-    _ticket_or_404(db, ticket_id)
+    _ticket_or_404(db, ticket_id, staff)
     return audit.for_ticket(db, ticket_id)
 
 
 @app.post("/privacy/tickets/{ticket_id}/anonymise", tags=["compliance"], dependencies=[Depends(require_api_key)])
-def anonymise_ticket(ticket_id: int, actor: str = Query(..., min_length=1, max_length=120),
-                     db: Session = Depends(get_db)) -> dict:
+def anonymise_ticket(ticket_id: int,
+                     actor: str | None = Query(None, max_length=120, description="Ignored since Week 7"),
+                     db: Session = Depends(get_db), staff: Staff = Depends(current_staff)) -> dict:
     """POPIA: remove a parent's personal data from a ticket on request (keeps the statistics)."""
-    ticket = _ticket_or_404(db, ticket_id)
+    ticket = _ticket_or_404(db, ticket_id, staff)
     removed = crud.anonymise_ticket(db, ticket, commit=False)
-    audit.record(db, "anonymise", "staff", ticket_id=ticket_id, actor=actor, human_override=True,
+    audit.record(db, "anonymise", "staff", ticket_id=ticket_id, actor=staff.name, human_override=True,
                  pii_found=removed, output={"reason": "data subject request"})
     return {"ticket_id": ticket_id, "removed": removed}
 
 
-@app.get("/risk/summary", tags=["compliance"], dependencies=[Depends(require_api_key)])
+@app.get("/risk/summary", tags=["compliance"], dependencies=[Depends(require_api_key), SENIOR_ONLY])
 def risk_summary(days: int = Query(30, ge=1, le=365), db: Session = Depends(get_db)) -> dict:
     """AI decisions, guardrails, PII masked, overrides, fairness and injection results (counts only)."""
     return build_summary(db, days)
 
 
-@app.get("/risk/fairness", tags=["compliance"], dependencies=[Depends(require_api_key)])
+@app.get("/risk/fairness", tags=["compliance"], dependencies=[Depends(require_api_key), SENIOR_ONLY])
 def risk_fairness(db: Session = Depends(get_db)) -> dict:
     return fairness_report(db)
 
 
-@app.get("/risk/report.pdf", tags=["compliance"], dependencies=[Depends(require_api_key)])
+@app.get("/risk/report.pdf", tags=["compliance"], dependencies=[Depends(require_api_key), SENIOR_ONLY])
 def risk_report(days: int = Query(30, ge=1, le=365), db: Session = Depends(get_db)):
     """Download the risk evaluation report as a PDF."""
     from fastapi.responses import Response as HTTPResponse

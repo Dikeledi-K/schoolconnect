@@ -12,6 +12,7 @@ os.environ["ANTHROPIC_API_KEY"] = ""
 os.environ["GEMINI_API_KEY"] = ""
 os.environ["API_KEY"] = ""
 os.environ["DATABASE_URL"] = "sqlite://"  # in-memory
+os.environ["PASSWORD_HASH_ITERATIONS"] = "1000"   # fast hashing in tests (real default: 600 000)
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -44,13 +45,56 @@ def db_session():
         engine.dispose()
 
 
+# --------------------------------------------------------------------------
+# Week 7: staff accounts. Staff endpoints need a login, so `client` is logged in as the
+# principal (who may see everything). `anon_client` is a parent / not logged in.
+# --------------------------------------------------------------------------
+TEST_PASSWORD = "test-password-123"
+PRINCIPAL_NAME = "Ms Dlamini"
+
+
+def add_staff(db, name: str, role: str, email: str | None = None, active: bool = True):
+    from app.auth.service import create_staff
+
+    email = email or f"{role}.{name.split()[-1].lower()}@test.example"
+    return create_staff(db, name, email, role, TEST_PASSWORD, active=active)
+
+
+def login_headers(client, email: str, password: str = TEST_PASSWORD) -> dict:
+    response = client.post("/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200, response.text
+    return {"Authorization": f"Bearer {response.json()['token']}"}
+
+
 @pytest.fixture
-def client(db_session):
-    """FastAPI test client wired to the test database."""
+def anon_client(db_session):
+    """Test client wired to the test database, NOT logged in."""
     app.dependency_overrides[get_db] = lambda: db_session
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(db_session):
+    """Test client logged in as the principal ("Ms Dlamini")."""
+    app.dependency_overrides[get_db] = lambda: db_session
+    principal = add_staff(db_session, PRINCIPAL_NAME, "principal", email="principal@test.example")
+    with TestClient(app) as c:
+        c.headers.update(login_headers(c, principal.email))
+        yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def login_as(db_session, anon_client):
+    """login_as("admin_clerk", "Mr Khumalo") -> (staff, auth headers) for a new account."""
+
+    def _login(role: str, name: str | None = None):
+        staff = add_staff(db_session, name or f"Test {role}", role)
+        return staff, login_headers(anon_client, staff.email)
+
+    return _login
 
 
 @pytest.fixture
@@ -109,8 +153,15 @@ def history_client(history_sessionmaker):
         finally:
             db.close()
 
+    from app.auth.service import get_staff_by_email
+
+    with history_sessionmaker() as db:
+        if get_staff_by_email(db, "principal@test.example") is None:
+            add_staff(db, PRINCIPAL_NAME, "principal", email="principal@test.example")
+
     app.dependency_overrides[get_db] = override
     with TestClient(app) as c:
+        c.headers.update(login_headers(c, "principal@test.example"))
         yield c
     app.dependency_overrides.clear()
 

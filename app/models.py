@@ -109,3 +109,32 @@ class AIAuditLog(Base):
     pii_found: Mapped[dict] = mapped_column(JSON, default=dict)   # counts per PII type, never the values
     human_override: Mapped[bool] = mapped_column(Boolean, default=False)
     actor: Mapped[str | None] = mapped_column(String(120), nullable=True)  # staff member for overrides
+
+
+class Staff(Base):
+    """Week 7: a staff account. Roles come from taxonomy.ACCOUNT_ROLES."""
+
+    __tablename__ = "staff"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    email: Mapped[str] = mapped_column(String(200), unique=True, index=True)   # stored lower-case
+    role: Mapped[str] = mapped_column(String(30), index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    password_hash: Mapped[str] = mapped_column(String(200))   # "pbkdf2_sha256$iterations$salt$hash"
+    failed_logins: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class StaffSession(Base):
+    """Week 7: a login. Only the SHA-256 hash of the token is stored, so a database leak
+    does not give anyone a working token."""
+
+    __tablename__ = "staff_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    staff_id: Mapped[int] = mapped_column(Integer, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
