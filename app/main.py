@@ -57,6 +57,7 @@ from app.schemas import (
 )
 from app.taxonomy import CATEGORIES, SENIOR_ROLES, STAFF_ROLES, taxonomy_as_dict
 from app.api import auth as auth_api
+from app.api import workflow as workflow_api
 from app.auth.access import can_see_ticket, visible_tickets_filter
 from app.auth.deps import current_staff, require_roles
 from app.models import Staff
@@ -92,6 +93,7 @@ app.add_middleware(
 
 
 app.include_router(auth_api.router)
+app.include_router(workflow_api.router)
 
 
 def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
@@ -231,7 +233,7 @@ def get_ticket(ticket_id: int, db: Session = Depends(get_db), staff: Staff = Dep
 def update_ticket_status(ticket_id: int, body: TicketStatusUpdate, db: Session = Depends(get_db),
                          staff: Staff = Depends(current_staff)):
     ticket = _ticket_or_404(db, ticket_id, staff)
-    return crud.update_status(db, ticket, body.status)
+    return crud.update_status(db, ticket, body.status, actor=staff.name)
 
 
 # --------------------------------------------------------------------------

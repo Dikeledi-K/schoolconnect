@@ -87,6 +87,10 @@ class TicketOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     resolved_at: datetime | None
+    # Week 7 workflow
+    assigned_to: int | None = None
+    first_response_at: datetime | None = None
+    escalation_level: int = 0
 
 
 class TicketCreated(BaseModel):
@@ -230,3 +234,23 @@ class LoginResult(BaseModel):
     token_type: str = "bearer"
     expires_at: datetime
     staff: StaffOut
+
+
+# --------------------------------------------------------------------------
+# Week 7: ticket events and assignment
+# --------------------------------------------------------------------------
+class TicketEventOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    ticket_id: int
+    type: str
+    from_value: str | None
+    to_value: str | None
+    actor: str | None
+    created_at: datetime
+
+
+class AssignRequest(BaseModel):
+    staff_id: int
+    reason: str | None = Field(default=None, max_length=300)

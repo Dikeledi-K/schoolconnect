@@ -2,7 +2,7 @@
 
 - The principal sees every ticket.
 - Learner-welfare / safety tickets: only the deputy principal and the principal.
-- Everyone else: tickets routed to their role.
+- Everyone else: tickets routed to their role, or assigned to them personally.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ def can_see_ticket(staff: Staff, ticket: Ticket) -> bool:
         return True
     if is_welfare(ticket):
         return staff.role in SENIOR_ROLES       # the deputy principal sees every welfare ticket
-    return ticket.routed_role == staff.role
+    return ticket.routed_role == staff.role or ticket.assigned_to == staff.id
 
 
 def visible_tickets_filter(staff: Staff):
@@ -30,7 +30,7 @@ def visible_tickets_filter(staff: Staff):
     if staff.role == PRINCIPAL_ROLE:
         return None
     welfare = or_(Ticket.category == WELFARE_CATEGORY, Ticket.safety_flag == true())
-    mine = Ticket.routed_role == staff.role
+    mine = or_(Ticket.routed_role == staff.role, Ticket.assigned_to == staff.id)
     if staff.role in SENIOR_ROLES:
         return or_(welfare, mine)
     return and_(mine, ~welfare)

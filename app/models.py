@@ -50,6 +50,12 @@ class Ticket(Base):
     )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Week 7 workflow. Older databases get these columns from db.migrate() at startup.
+    assigned_to: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)   # staff.id
+    first_response_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    escalation_level: Mapped[int] = mapped_column(Integer, default=0)   # times escalated up the chain
+    escalated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
 
 class ForecastRun(Base):
     """Week 5: one stored forecast, so results are reproducible and comparable over time."""
@@ -138,3 +144,18 @@ class StaffSession(Base):
     staff_id: Mapped[int] = mapped_column(Integer, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class TicketEvent(Base):
+    """Week 7: what happened to a ticket, in order: assignments, status changes, first response,
+    escalations and notifications. (This is the events table from the skipped Week 3.)"""
+
+    __tablename__ = "ticket_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(Integer, index=True)
+    type: Mapped[str] = mapped_column(String(30), index=True)
+    from_value: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    to_value: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    actor: Mapped[str | None] = mapped_column(String(120), nullable=True)   # staff name, or "system"
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)

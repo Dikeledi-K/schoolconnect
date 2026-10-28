@@ -107,12 +107,24 @@ def get_ticket_by_reference(db: Session, reference: str) -> Ticket | None:
     return db.scalar(select(Ticket).where(Ticket.reference == reference.strip().upper()))
 
 
-def update_status(db: Session, ticket: Ticket, status: str) -> Ticket:
-    """Change status. resolved_at is set when resolved and cleared if reopened."""
+def update_status(db: Session, ticket: Ticket, status: str, actor: str | None = None,
+                  now: datetime | None = None) -> Ticket:
+    """Change status. resolved_at is set when resolved and cleared if reopened.
+
+    Week 7: every change is a ticket event, and the first move to "in progress" counts as
+    the school's first response (it stops the response-time clock).
+    """
+    from app.workflow import events
+
+    now = now or datetime.now(timezone.utc)
+    old = ticket.status
     ticket.status = status
-    now = datetime.now(timezone.utc)
     ticket.updated_at = now
     ticket.resolved_at = now if status == "resolved" else None
+    if old != status:
+        events.log(db, ticket.id, "status_changed", old, status, actor, at=now)
+    if status == "in_progress":
+        events.mark_first_response(db, ticket, actor, now)
     db.commit()
     db.refresh(ticket)
     return ticket
@@ -247,9 +259,14 @@ def approve_response(db: Session, response, approved_by: str):
     """A person approves the reply. Nothing reaches a parent without this step (sending is Week 7)."""
     from app import audit
 
+    from app.workflow import events
+
     if response.status != "draft":
         raise ValueError("This reply is already approved")
     response.status, response.approved_by, response.approved_at = "approved", approved_by, utcnow()
+    ticket = db.get(Ticket, response.ticket_id)
+    if ticket is not None:
+        events.mark_first_response(db, ticket, approved_by, response.approved_at)
     audit.record(db, "response_approval", "staff", ticket_id=response.ticket_id, actor=approved_by,
                  human_override=response.edited,
                  output={"response_id": response.id, "edited": response.edited, "method": response.method},
