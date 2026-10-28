@@ -3,16 +3,15 @@
 import streamlit as st
 
 import api_client as api
+import ui
 
-st.set_page_config(page_title="Send a message - SchoolConnect", page_icon="✉️")
 
 URGENCY_BADGE = {"low": "🟢 Low", "medium": "🟡 Medium", "high": "🟠 High", "critical": "🔴 Critical"}
 
-st.title("✉️ Send a message to the school")
-st.write(
-    "Write in any language you are comfortable with: English, isiZulu, Sesotho, "
-    "Afrikaans or isiXhosa. You will get a reference number to track your message."
-)
+ui.page("Send a message to the school",
+        "Write in any language you are comfortable with: English, isiZulu, Sesotho, "
+        "Afrikaans or isiXhosa. You will get a reference number to track your message.",
+        "✉️", layout="centered")
 st.warning(
     "If a child is in immediate danger, do not wait for a reply: call **10111** (SAPS) "
     "or **112** from a cellphone."
