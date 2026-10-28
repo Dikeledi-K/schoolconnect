@@ -1,0 +1,109 @@
+# Week 8: scheduled jobs for the live demo (docs/DEPLOYMENT.md, section "Scheduled jobs").
+#
+# GitHub cron uses UTC. South Africa (SAST) = UTC + 2, so 06:00 SAST = 04:00 UTC.
+# Two kinds of job:
+#   - LIGHT calls to the Render API (escalation, retention) and keep-warm pings;
+#   - HEAVY work (forecasts, weekly reports) runs right here on GitHub's runner, connected
+#     to Supabase, so Render's 0.1 CPU free instance never has to do it.
+# Secrets (repo Settings -> Secrets and variables -> Actions):
+#   API_BASE_URL, WEB_URL, JOBS_TOKEN, DATABASE_URL
+# GitHub may start scheduled runs a few minutes late, and switches schedules off after 60 days
+# without any commit to the repo (switch them back on under the Actions tab).
+
+name: Scheduled jobs
+
+on:
+  schedule:
+    - cron: "*/15 4-14 * * 1-5"   # escalate: every 15 min, 06:00-16:45 SAST, Mon-Fri
+    - cron: "0 15 * * 1-5"        # escalate: 17:00 SAST, Mon-Fri (last run of the day)
+    - cron: "*/14 5-13 * * 1-5"   # keep warm: every 14 min, 07:00-15:56 SAST, Mon-Fri
+    - cron: "0 14 * * 1-5"        # keep warm: 16:00 SAST, Mon-Fri
+    - cron: "0 3 * * *"           # forecasts: 05:00 SAST, every day
+    - cron: "0 4 * * 1"           # weekly reports: 06:00 SAST, Mondays
+    - cron: "0 0 * * 0"           # retention (DRY RUN): 02:00 SAST, Sundays
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which job to run now"
+        required: true
+        type: choice
+        options: [escalate, keep-warm, forecasts, weekly-reports, retention-dry-run]
+
+# Never run two copies of the same job at once.
+concurrency:
+  group: jobs-${{ github.event.schedule || github.event.inputs.job }}
+  cancel-in-progress: false
+
+jobs:
+  escalate:
+    if: github.event.schedule == '*/15 4-14 * * 1-5' || github.event.schedule == '0 15 * * 1-5' || github.event.inputs.job == 'escalate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version-file: ".python-version" }
+      - run: pip install "httpx>=0.27"
+      - name: POST /jobs/escalate
+        env: { JOBS_TOKEN: "${{ secrets.JOBS_TOKEN }}" }
+        run: python scripts/call_endpoint.py POST "${{ secrets.API_BASE_URL }}/jobs/escalate" --jobs-token
+
+  keep-warm:
+    if: github.event.schedule == '*/14 5-13 * * 1-5' || github.event.schedule == '0 14 * * 1-5' || github.event.inputs.job == 'keep-warm'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version-file: ".python-version" }
+      - run: pip install "httpx>=0.27"
+      - name: GET API /health
+        run: python scripts/call_endpoint.py GET "${{ secrets.API_BASE_URL }}/health"
+      - name: GET web home page
+        run: python scripts/call_endpoint.py GET "${{ secrets.WEB_URL }}/"
+
+  forecasts:
+    if: github.event.schedule == '0 3 * * *' || github.event.inputs.job == 'forecasts'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version-file: ".python-version", cache: pip }
+      - run: pip install -r requirements.txt   # the same libraries as Render, so stored forecasts match
+      - name: Compute and store today's + pinned forecasts (straight into Supabase)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JOBS_TOKEN: ${{ secrets.JOBS_TOKEN }}
+          FORECAST_PINNED_DATES: "2025-12-15"
+        run: python scripts/refresh_forecasts.py
+
+  weekly-reports:
+    if: github.event.schedule == '0 4 * * 1' || github.event.inputs.job == 'weekly-reports'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version-file: ".python-version", cache: pip }
+      - run: pip install -r requirements.txt
+      - name: Make last week's reports (straight into Supabase)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JOBS_TOKEN: ${{ secrets.JOBS_TOKEN }}
+        run: python scripts/make_weekly_reports.py
+
+  retention-dry-run:
+    # DRY RUN ONLY: it reports what would be anonymised and changes nothing. Switch to a real run
+    # only after the principal has approved it (recorded in docs/DEPLOYMENT.md).
+    if: github.event.schedule == '0 0 * * 0' || github.event.inputs.job == 'retention-dry-run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version-file: ".python-version" }
+      - run: pip install "httpx>=0.27"
+      - name: POST /jobs/retention?dry_run=true
+        env: { JOBS_TOKEN: "${{ secrets.JOBS_TOKEN }}" }
+        run: python scripts/call_endpoint.py POST "${{ secrets.API_BASE_URL }}/jobs/retention?dry_run=true" --jobs-token
