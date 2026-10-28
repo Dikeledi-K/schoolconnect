@@ -181,3 +181,23 @@ class Outbox(Base):
     error: Mapped[str | None] = mapped_column(String(300), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class FeeExemption(Base):
+    """Week 7: one fee exemption request and every decision on it (see workflow/fee_exemption.py)."""
+
+    __tablename__ = "fee_exemptions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(30), index=True)
+    checklist: Mapped[list] = mapped_column(JSON, default=list)   # [{"document": ..., "received": bool}]
+    finance_decision: Mapped[str | None] = mapped_column(String(10), nullable=True)   # approve | decline
+    finance_note: Mapped[str | None] = mapped_column(Text, nullable=True)            # reason for a decline
+    finance_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    finance_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    principal_decision: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    principal_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    principal_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    decline_reason: Mapped[str | None] = mapped_column(Text, nullable=True)   # final reason, sent to the parent
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

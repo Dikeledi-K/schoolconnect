@@ -276,3 +276,35 @@ class OutboxOut(BaseModel):
     error: str | None
     created_at: datetime
     sent_at: datetime | None
+
+
+# --------------------------------------------------------------------------
+# Week 7: fee exemption workflow
+# --------------------------------------------------------------------------
+class FeeExemptionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    ticket_id: int
+    ticket_reference: str | None = None
+    status: str
+    checklist: list
+    finance_decision: str | None
+    finance_note: str | None
+    finance_by: str | None
+    finance_at: datetime | None
+    principal_decision: str | None
+    principal_by: str | None
+    principal_at: datetime | None
+    decline_reason: str | None
+    created_at: datetime
+    delivery_status: str | None = None
+
+
+class ChecklistUpdate(BaseModel):
+    received: list[bool] = Field(description="One tick per document, in the order of the checklist")
+
+
+class FeeDecision(BaseModel):
+    decision: Literal["approve", "decline"]
+    reason: str | None = Field(default=None, max_length=500)

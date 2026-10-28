@@ -58,6 +58,7 @@ from app.schemas import (
 from app.taxonomy import CATEGORIES, SENIOR_ROLES, STAFF_ROLES, taxonomy_as_dict
 from app.api import auth as auth_api
 from app.api import workflow as workflow_api
+from app.api import fees as fees_api
 from app.workflow.intake import intake_ticket
 from app.api.workflow import with_sla
 from app.workflow.escalation import run_escalations
@@ -97,6 +98,7 @@ app.add_middleware(
 
 app.include_router(auth_api.router)
 app.include_router(workflow_api.router)
+app.include_router(fees_api.router)
 
 
 def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
