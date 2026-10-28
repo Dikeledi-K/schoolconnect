@@ -374,9 +374,10 @@ def forecast_evaluation(as_of: date | None = Query(None, description=AS_OF_HELP)
 def refresh_forecast(days: int = Query(60, ge=1, le=MAX_HORIZON), db: Session = Depends(get_db)) -> dict:
     """Recompute and store the forecast (called by a scheduler in Week 8)."""
     fc.clear_cache()
+    stored = fc.refresh_stored(db)          # Week 8: today + pinned demo dates, for fast endpoints
     run = fc.save_run(db, _bundle(db, None), days)
     return {"run_id": run.id, "as_of": run.as_of, "horizon_days": run.horizon_days,
-            "chosen_models": run.chosen_models}
+            "chosen_models": run.chosen_models, "stored": stored}
 
 
 

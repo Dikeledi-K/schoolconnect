@@ -220,3 +220,25 @@ class WeeklyReport(Base):
     summary_method: Mapped[str] = mapped_column(String(30), default="template")
     data: Mapped[dict] = mapped_column(JSON)
     pdf: Mapped[bytes] = mapped_column(LargeBinary)
+
+
+class StoredForecast(Base):
+    """Week 8: a pre-computed forecast "bundle", so endpoints answer in milliseconds after the
+    API wakes up on Render instead of spending a minute on the 0.1 CPU free instance.
+
+    The bundle is stored with pickle (exact, so results are identical) and SIGNED with an HMAC
+    keyed by JOBS_TOKEN: it is only ever unpickled if the signature proves this system wrote it.
+    `fingerprint` is a hash of the ticket history the forecast was built from, so a stored result
+    is used only for exactly the same data. `versions` guards against library upgrades.
+    """
+
+    __tablename__ = "stored_forecasts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    as_of: Mapped[str] = mapped_column(String(10), index=True)          # YYYY-MM-DD
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    versions: Mapped[str] = mapped_column(String(120))
+    payload: Mapped[bytes] = mapped_column(LargeBinary)
+    signature: Mapped[str] = mapped_column(String(64))
+    seconds: Mapped[float] = mapped_column(Float, default=0.0)            # how long it took to compute
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)

@@ -54,8 +54,16 @@ class Settings(BaseSettings):
     # Empty = POST /integrations/inbound-message is disabled.
     inbound_secret: str = ""
 
+    # Week 8: forecast dates that are pre-computed and stored by the nightly job, besides today,
+    # so the panel demo (the January 2026 backtest) never computes live on Render's 0.1 CPU.
+    forecast_pinned_dates: str = "2025-12-15"
+
     # Comma-separated allowed origins for CORS.
     cors_origins: str = "http://localhost:8501"
+
+    @property
+    def pinned_forecast_dates(self) -> list[str]:
+        return [d.strip() for d in self.forecast_pinned_dates.split(",") if d.strip()]
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -3,14 +3,30 @@
 compute_bundle() is the whole pipeline in one place:
     tickets -> daily counts -> calendar features -> backtest + model choice -> forecast
 Endpoints then slice the cached bundle (e.g. 14 days) and add workload, surges and insights.
+
+Week 8: where a bundle comes from, fastest first:
+    1. memory (this process already has it)
+    2. the stored_forecasts table (written by the nightly job for today + the pinned demo dates)
+    3. compute it now (about 10 s on a laptop, much longer on Render's 0.1 CPU)
 """
 
+import hashlib
+import hmac
+import pickle
+import platform
 import threading
+import time
+from datetime import timedelta
 
 import pandas as pd
 from sqlalchemy.orm import Session
 
+import numpy as np
+import sklearn
+from sqlalchemy import delete, select
+
 from app import crud
+from app.config import get_settings
 from app.forecasting.calendar import calendar_features
 from app.forecasting.data import SCHOOL_TIMEZONE, daily_counts
 from app.forecasting.evaluate import evaluate
@@ -19,7 +35,7 @@ from app.forecasting.insights import build_insights
 from app.forecasting.models import MODEL_DESCRIPTIONS
 from app.forecasting.surges import find_surges
 from app.forecasting.workload import daily_workload, weekly_workload
-from app.models import ForecastRun
+from app.models import ForecastRun, StoredForecast
 
 _cache: dict = {}
 _lock = threading.Lock()
@@ -33,9 +49,12 @@ def today_local() -> pd.Timestamp:
     return pd.Timestamp.now(tz=SCHOOL_TIMEZONE).tz_localize(None).normalize()
 
 
-def compute_bundle(rows, as_of=None) -> dict:
-    """Run the full pipeline using only tickets created BEFORE as_of."""
-    as_of = pd.Timestamp(as_of).normalize() if as_of is not None else today_local()
+def _as_of(as_of) -> pd.Timestamp:
+    return pd.Timestamp(as_of).normalize() if as_of is not None else today_local()
+
+
+def history_for(rows, as_of: pd.Timestamp) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """(all daily counts, daily counts BEFORE as_of): the only inputs the forecast learns from."""
     all_daily = daily_counts(rows)
     if all_daily.empty or all_daily["total"].sum() == 0:
         raise NotEnoughHistory("no ticket history yet; run scripts/generate_history.py")
@@ -44,27 +63,113 @@ def compute_bundle(rows, as_of=None) -> dict:
         raise NotEnoughHistory("need at least 8 weeks of ticket history before the forecast date")
     # Make sure history runs right up to the day before as_of (zero-filled).
     history = daily_counts(rows, start=history.index.min(), end=as_of - pd.Timedelta(days=1))
-    history = history.loc[history.index < as_of]
+    return all_daily, history.loc[history.index < as_of]
 
+
+def actuals_for(all_daily: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
+    """What really happened from as_of on (shown in the backtest view). Cheap, so never stored."""
+    return all_daily.loc[(all_daily.index >= as_of) & (all_daily.index < as_of + pd.Timedelta(days=MAX_HORIZON))]
+
+
+def compute_bundle(rows, as_of=None) -> dict:
+    """Run the full pipeline using only tickets created BEFORE as_of."""
+    as_of = _as_of(as_of)
+    all_daily, history = history_for(rows, as_of)
     cal = calendar_features(history.index.min(), as_of + pd.Timedelta(days=MAX_HORIZON))
     ev = evaluate(history, cal)
     forecast = make_forecast(history, cal, ev["chosen"], ev["intervals"], days=MAX_HORIZON)
-
-    # If as_of is in the past we can show what really happened (backtest demo view).
-    future_actual = all_daily.loc[(all_daily.index >= as_of)
-                                  & (all_daily.index < as_of + pd.Timedelta(days=MAX_HORIZON))]
     return {"as_of": as_of, "history": history, "cal": cal, "evaluation": ev,
-            "forecast": forecast, "actuals": future_actual}
+            "forecast": forecast, "actuals": actuals_for(all_daily, as_of)}
+
+
+# ---------- Week 8: stored bundles ----------
+def fingerprint(history: pd.DataFrame) -> str:
+    """A hash of the exact daily counts the forecast learns from. Same data -> same hash."""
+    return hashlib.sha256(pd.util.hash_pandas_object(history, index=True).values.tobytes()).hexdigest()
+
+
+def library_versions() -> str:
+    return (f"py{platform.python_version_tuple()[0]}.{platform.python_version_tuple()[1]}"
+            f"-pandas{pd.__version__}-numpy{np.__version__}-sklearn{sklearn.__version__}")
+
+
+def _signing_key() -> bytes | None:
+    """Stored bundles are signed with JOBS_TOKEN. No token (local dev) = never store or load."""
+    token = get_settings().jobs_token
+    return hashlib.sha256(b"stored-forecast:" + token.encode()).digest() if token else None
+
+
+def _sign(key: bytes, payload: bytes) -> str:
+    return hmac.new(key, payload, hashlib.sha256).hexdigest()
+
+
+def load_stored(db: Session, as_of: pd.Timestamp, history: pd.DataFrame, all_daily: pd.DataFrame) -> dict | None:
+    """The stored bundle for exactly this date and data, or None. Never unpickles unsigned data."""
+    key = _signing_key()
+    if key is None:
+        return None
+    row = db.scalar(select(StoredForecast).where(
+        StoredForecast.as_of == as_of.date().isoformat(), StoredForecast.fingerprint == fingerprint(history),
+        StoredForecast.versions == library_versions()).order_by(StoredForecast.id.desc()))
+    if row is None or not hmac.compare_digest(_sign(key, row.payload), row.signature):
+        return None
+    bundle = pickle.loads(row.payload)  # noqa: S301 - signed by this system (HMAC checked above)
+    bundle["actuals"] = actuals_for(all_daily, as_of)   # refresh "what really happened" from live data
+    return bundle
+
+
+def store_bundle(db: Session, bundle: dict, seconds: float = 0.0) -> StoredForecast | None:
+    key = _signing_key()
+    if key is None:
+        return None
+    as_of = bundle["as_of"].date().isoformat()
+    payload = pickle.dumps({k: v for k, v in bundle.items() if k != "actuals"}, protocol=pickle.HIGHEST_PROTOCOL)
+    db.execute(delete(StoredForecast).where(StoredForecast.as_of == as_of))   # keep one per date
+    row = StoredForecast(as_of=as_of, fingerprint=fingerprint(bundle["history"]), versions=library_versions(),
+                         payload=payload, signature=_sign(key, payload), seconds=round(seconds, 2))
+    db.add(row)
+    db.commit()
+    return row
+
+
+def refresh_stored(db: Session, dates: list | None = None) -> list[dict]:
+    """Compute and store today's forecast and the pinned demo dates (the nightly job)."""
+    wanted = [today_local()] + [pd.Timestamp(d) for d in get_settings().pinned_forecast_dates]
+    dates = [_as_of(d) for d in (dates or wanted)]
+    rows = crud.ticket_timestamps(db)
+    done = []
+    for as_of in dict.fromkeys(dates):            # no duplicates, keep order
+        start = time.perf_counter()
+        try:
+            bundle = compute_bundle(rows, as_of)
+        except NotEnoughHistory as exc:
+            done.append({"as_of": as_of.date().isoformat(), "stored": False, "reason": str(exc)})
+            continue
+        seconds = time.perf_counter() - start
+        stored = store_bundle(db, bundle, seconds)
+        with _lock:
+            _cache[(as_of.date().isoformat(), len(rows))] = bundle
+        done.append({"as_of": as_of.date().isoformat(), "stored": stored is not None,
+                     "seconds": round(seconds, 1)})
+    # Tidy up: old "today" rows are never needed again (pinned dates are kept).
+    keep = {d.date().isoformat() for d in dates} | set(get_settings().pinned_forecast_dates)
+    cutoff = (today_local() - timedelta(days=7)).date().isoformat()
+    db.execute(delete(StoredForecast).where(StoredForecast.as_of < cutoff, StoredForecast.as_of.not_in(keep)))
+    db.commit()
+    return done
 
 
 def get_bundle(db: Session, as_of=None) -> dict:
-    """Cached compute_bundle(). The cache resets whenever the ticket count changes."""
+    """compute_bundle(), but from memory or the stored_forecasts table whenever possible.
+    The memory cache resets whenever the ticket count changes."""
     rows = crud.ticket_timestamps(db)
     key = (str(pd.Timestamp(as_of).date()) if as_of else str(today_local().date()), len(rows))
     with _lock:
         if key in _cache:
             return _cache[key]
-    bundle = compute_bundle(rows, as_of)
+    when = _as_of(as_of)
+    all_daily, history = history_for(rows, when)
+    bundle = load_stored(db, when, history, all_daily) or compute_bundle(rows, as_of)
     with _lock:
         if len(_cache) > 8:
             _cache.clear()
