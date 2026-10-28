@@ -10,8 +10,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import api_client as api
+import ui
 
-st.set_page_config(page_title="Forecast & workload - SchoolConnect", page_icon="📈", layout="wide")
 
 # Chart colours: validated categorical slots in fixed order, and a one-hue sequential ramp.
 ACTUAL_COLOUR = "#2a78d6"      # slot 1 (blue)
@@ -42,8 +42,7 @@ def call(name: str, **kwargs):
         st.stop()
 
 
-st.title("📈 Forecast & workload")
-st.caption("Which staff will be overloaded, when, and what should the school do about it?")
+ui.page("Forecast & workload", "Which staff will be overloaded, when, and what should the school do about it?", "📈")
 
 tax = call("taxonomy")
 categories = {c["code"]: c["display_name"] for c in tax["categories"]}
