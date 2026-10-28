@@ -13,6 +13,11 @@ os.environ["GEMINI_API_KEY"] = ""
 os.environ["API_KEY"] = ""
 os.environ["DATABASE_URL"] = "sqlite://"  # in-memory
 os.environ["PASSWORD_HASH_ITERATIONS"] = "1000"   # fast hashing in tests (real default: 600 000)
+# Week 7: never inherit a developer's local secrets or a real mail server from .env.
+os.environ["JOBS_TOKEN"] = ""
+os.environ["INBOUND_SECRET"] = ""
+os.environ["NOTIFY_MODE"] = "dry_run"
+os.environ["SMTP_HOST"] = ""
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

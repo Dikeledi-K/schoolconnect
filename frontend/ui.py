@@ -17,6 +17,11 @@ import streamlit as st
 URGENCY_COLOUR = {"low": "#0ca30c", "medium": "#fab219", "high": "#ec835a", "critical": "#d03b3b"}
 URGENCY_TEXT = {"low": "#ffffff", "medium": "#3b2a1a", "high": "#3b2a1a", "critical": "#ffffff"}
 
+# Week 7: response-time (SLA) badges, also always with a text label.
+SLA_COLOUR = {"overdue": "#d03b3b", "due_soon": "#fab219", "on_track": "#0ca30c", "met": "#8a8984"}
+SLA_TEXT = {"overdue": "#ffffff", "due_soon": "#3b2a1a", "on_track": "#ffffff", "met": "#ffffff"}
+SLA_ICON = {"overdue": "⏰", "due_soon": "⏳", "on_track": "🕒", "met": "✔"}
+
 # Chart ink and gridlines: warm browns, kept quiet so the data stands out.
 INK = "#3b2a1a"
 MUTED_INK = "#7a6552"
@@ -68,18 +73,23 @@ _CSS = """
   background: var(--accent); border-color: var(--accent); box-shadow: 0 3px 0 rgba(59, 42, 26, 0.25);
 }
 [data-testid="stSidebarNavLink"][aria-current="page"] p { color: #ffffff; }
-/* One colour + icon per page, in menu order: Home, Send, Inbox, Forecast, Risk.
+/* One colour + icon per page, in menu order:
+   Home, Send a message, My work, Staff inbox, Fee exemptions, Forecast, Risk.
    Shades are dark enough for white text (contrast 4.5:1 or more). */
 [data-testid="stSidebarNavItems"] li:nth-child(1) a { --accent: #c2410c; }
 [data-testid="stSidebarNavItems"] li:nth-child(2) a { --accent: #be3455; }
-[data-testid="stSidebarNavItems"] li:nth-child(3) a { --accent: #15803d; }
-[data-testid="stSidebarNavItems"] li:nth-child(4) a { --accent: #b45309; }
-[data-testid="stSidebarNavItems"] li:nth-child(5) a { --accent: #0f766e; }
+[data-testid="stSidebarNavItems"] li:nth-child(3) a { --accent: #6d28d9; }
+[data-testid="stSidebarNavItems"] li:nth-child(4) a { --accent: #15803d; }
+[data-testid="stSidebarNavItems"] li:nth-child(5) a { --accent: #0369a1; }
+[data-testid="stSidebarNavItems"] li:nth-child(6) a { --accent: #b45309; }
+[data-testid="stSidebarNavItems"] li:nth-child(7) a { --accent: #0f766e; }
 [data-testid="stSidebarNavItems"] li:nth-child(1) a p::before { content: "🏠  "; }
 [data-testid="stSidebarNavItems"] li:nth-child(2) a p::before { content: "✉️  "; }
-[data-testid="stSidebarNavItems"] li:nth-child(3) a p::before { content: "📥  "; }
-[data-testid="stSidebarNavItems"] li:nth-child(4) a p::before { content: "📈  "; }
-[data-testid="stSidebarNavItems"] li:nth-child(5) a p::before { content: "🛡️  "; }
+[data-testid="stSidebarNavItems"] li:nth-child(3) a p::before { content: "✅  "; }
+[data-testid="stSidebarNavItems"] li:nth-child(4) a p::before { content: "📥  "; }
+[data-testid="stSidebarNavItems"] li:nth-child(5) a p::before { content: "💰  "; }
+[data-testid="stSidebarNavItems"] li:nth-child(6) a p::before { content: "📈  "; }
+[data-testid="stSidebarNavItems"] li:nth-child(7) a p::before { content: "🛡️  "; }
 
 /* ===== Page header banner: sunny orange, rounded, with a soft "sun" circle ===== */
 .sc-hero {
@@ -126,9 +136,10 @@ _CSS = """
 }
 [data-testid="stPageLink"] a:hover { filter: brightness(1.1); }
 [data-testid="stPageLink"] a p { color: #ffffff !important; font-weight: 800; }
+/* One colour per Home card (parents, staff, finance, principal), matching the sidebar */
 [data-testid="stColumn"]:nth-child(1) [data-testid="stPageLink"] a { --btn: #be3455; }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stPageLink"] a { --btn: #15803d; }
-[data-testid="stColumn"]:nth-child(3) [data-testid="stPageLink"] a { --btn: #b45309; }
+[data-testid="stColumn"]:nth-child(3) [data-testid="stPageLink"] a { --btn: #0369a1; }
 [data-testid="stColumn"]:nth-child(4) [data-testid="stPageLink"] a { --btn: #0f766e; }
 
 /* Section headings: warm brown, a little more space above */
@@ -156,6 +167,22 @@ def urgency_pill(urgency: str) -> str:
     """HTML for a coloured urgency label. `urgency` comes from the taxonomy, not from parents."""
     bg, fg = URGENCY_COLOUR.get(urgency, "#898781"), URGENCY_TEXT.get(urgency, "#ffffff")
     return f'<span class="sc-pill" style="background:{bg};color:{fg}">{urgency.title()}</span>'
+
+
+def sla_badge(sla: dict | None) -> str:
+    """HTML badge such as "⏰ overdue 3 h" or "🕒 2 h left". `sla` comes from the API."""
+    if not sla:
+        return ""
+    status = sla["status"]
+    return (f'<span class="sc-pill" style="background:{SLA_COLOUR[status]};color:{SLA_TEXT[status]}">'
+            f'{SLA_ICON[status]} {sla["label"]}</span>')
+
+
+def empty_state(icon: str, title: str, text: str) -> None:
+    """A friendly message instead of an empty table."""
+    with st.container(border=True):
+        st.markdown(f"### {icon} {title}")
+        st.write(text)
 
 
 def style_urgency(table: pd.DataFrame, column: str = "Urgency"):

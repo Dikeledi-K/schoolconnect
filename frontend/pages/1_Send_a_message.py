@@ -56,17 +56,39 @@ if submitted:
             st.caption("Please keep your reference number to check progress below.")
 
 st.divider()
-st.subheader("Check progress")
+st.subheader("🔎 Check my message")
+st.write("Type the reference number you were given (it looks like SC-20261022-0001).")
 with st.form("check_reference"):
     reference = st.text_input("Reference number", placeholder="SC-20261022-0001")
     check = st.form_submit_button("Check")
 
-if check and reference.strip():
-    try:
-        ticket = api.ticket_by_reference(reference)
-    except api.ApiError:
-        st.error("We could not find that reference number. Please check it and try again.")
+# Plain words for parents. No message text or personal details are ever shown here.
+STATUS_WORDS = {
+    "new": ("📬", "We have received your message", "A staff member will look at it soon."),
+    "in_progress": ("🧑‍💼", "A staff member is working on it", "We will contact you if we need anything else."),
+    "resolved": ("✅", "Your message has been dealt with", "If you still need help, send a new message "
+                 "and mention this reference number."),
+}
+REPLY_WORDS = {
+    "sent": "✉️ The school has sent you a reply by email.",
+    "replied_not_emailed": "📞 The school has prepared a reply. If you gave a phone number, the office will "
+                           "contact you; you can also phone the school and quote your reference.",
+    "none": "No reply has been sent yet.",
+}
+
+if check:
+    if not reference.strip():
+        st.error("Please type your reference number first.")
     else:
-        status_label = {"new": "Received", "in_progress": "Being handled", "resolved": "Resolved"}
-        st.write(f"**{ticket['reference']}**: {status_label.get(ticket['status'], ticket['status'])}")
-        st.caption(f"Last updated {ticket['updated_at'][:16].replace('T', ' ')} (UTC)")
+        try:
+            ticket = api.ticket_by_reference(reference)
+        except api.ApiError:
+            st.error("We could not find that reference number. Please check it and try again.")
+        else:
+            icon, headline, detail = STATUS_WORDS.get(ticket["status"], ("ℹ️", ticket["status"], ""))
+            with st.container(border=True):
+                st.markdown(f"### {icon} {headline}")
+                st.write(detail)
+                st.write(REPLY_WORDS.get(ticket.get("reply_status", "none"), ""))
+                st.caption(f"Reference {ticket['reference']} · last updated "
+                           f"{ticket['updated_at'][:16].replace('T', ' ')} (UTC)")

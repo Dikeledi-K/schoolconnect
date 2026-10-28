@@ -4,10 +4,12 @@ import pandas as pd
 import streamlit as st
 
 import api_client as api
+import auth
 import ui
 
 ui.page("Risk & compliance", "What did the AI decide, did people correct it, is every group of parents treated "
         "fairly, and is personal data protected? Counts only: no names or messages on this page.", "🛡️")
+me = auth.require_login(roles=auth.SENIOR_ROLES)
 
 days = st.select_slider("Period", options=[7, 30, 90, 365], value=30, format_func=lambda d: f"Last {d} days")
 

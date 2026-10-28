@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import api_client as api
+import auth
 import ui
 
 
@@ -24,14 +25,16 @@ SEVERITY_ICON = {"high": "🔴", "medium": "🟡", "low": "🔵", "info": "ℹ�
 
 
 @st.cache_data(ttl=60, show_spinner="Working out the forecast...")
-def cached(name: str, **kwargs):
+def cached(name: str, role: str, **kwargs):
+    """Cached per role, so one person's results are never served to a role that may not see them.
+    (These are school-wide counts with no personal data; the API checks the role on every call.)"""
     return getattr(api, name)(**kwargs)
 
 
 def call(name: str, **kwargs):
     """Call the API; show a friendly message (never a stack trace) if it fails."""
     try:
-        return cached(name, **kwargs)
+        return cached(name, me["role"], **kwargs)
     except api.ApiError as err:
         st.error(str(err))
         if "history" in str(err):
@@ -43,6 +46,7 @@ def call(name: str, **kwargs):
 
 
 ui.page("Forecast & workload", "Which staff will be overloaded, when, and what should the school do about it?", "📈")
+me = auth.require_login(roles=auth.SENIOR_ROLES)
 
 tax = call("taxonomy")
 categories = {c["code"]: c["display_name"] for c in tax["categories"]}

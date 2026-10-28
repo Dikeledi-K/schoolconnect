@@ -8,25 +8,29 @@ import streamlit as st
 import api_client as api
 import ui
 
+import auth
+
 ui.page("SchoolConnect", "AI help desk for South African public schools. Parents write in English, "
         "isiZulu, Sesotho, Afrikaans or isiXhosa; we sort, route and track every message.", "🏫")
+auth.sidebar()   # shows who is logged in (if anyone) and a logout button
 
 # ---- Where do you want to go? One card per audience ------------------------
 st.subheader("Where do you want to go?")
 cards = [
-    ("pages/1_Send_a_message.py", "✉️", "Send a message", "For parents",
-     "Ask the school a question and get a reference number to track it."),
-    ("pages/2_Staff_inbox.py", "📥", "Staff inbox", "For staff",
-     "See every message, most urgent first. Correct the AI and approve replies."),
-    ("pages/3_Forecast_and_workload.py", "📈", "Forecast & workload", "For the principal",
-     "Busy periods coming up, and which staff will be overloaded."),
-    ("pages/4_Risk_and_compliance.py", "🛡️", "Risk & compliance", "For the principal / SGB",
-     "Is the AI safe, fair and POPIA-compliant? Download the report."),
+    ("For parents", "Ask the school a question, or check on a message with your reference number.",
+     [("pages/1_Send_a_message.py", "✉️", "Send a message")]),
+    ("For staff (login)", "Your own tickets with their deadlines, and the whole inbox for your role.",
+     [("pages/2_My_work.py", "✅", "My work"), ("pages/3_Staff_inbox.py", "📥", "Staff inbox")]),
+    ("For finance & principal", "Fee exemption requests: documents, recommendation, decision, letter.",
+     [("pages/4_Fee_exemptions.py", "💰", "Fee exemptions")]),
+    ("For the principal / SGB", "Busy periods ahead, and whether the AI is safe, fair and POPIA-compliant.",
+     [("pages/5_Forecast_and_workload.py", "📈", "Forecast"), ("pages/6_Risk_and_compliance.py", "🛡️", "Risk")]),
 ]
-for col, (path, icon, label, audience, text) in zip(st.columns(4), cards):
+for col, (audience, text, links) in zip(st.columns(4), cards):
     with col.container(border=True, height="stretch"):
         st.caption(audience.upper())
-        st.page_link(path, label=f"**{label}**", icon=icon)
+        for path, icon, label in links:
+            st.page_link(path, label=f"**{label}**", icon=icon)
         st.write(text)
 
 # ---- Overview numbers ------------------------------------------------------
