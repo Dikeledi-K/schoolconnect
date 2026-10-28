@@ -52,3 +52,12 @@ def test_demo_needs_a_password(db_file):
     result = subprocess.run([sys.executable, str(ROOT / "scripts" / "demo_week6.py")], cwd=ROOT, env=env,
                             capture_output=True, text=True, timeout=120)
     assert result.returncode != 0 and "password" in (result.stdout + result.stderr).lower()
+
+
+def test_make_weekly_reports_script(db_file):
+    """Weeks 3-4: the README's report command works after the Week 7 demo, and is idempotent."""
+    run_script("demo_week7.py", db_file, "--password", PASSWORD)
+    out = run_script("make_weekly_reports.py", db_file, "--no-outlook")
+    assert "made 6 report(s)" in out
+    again = run_script("make_weekly_reports.py", db_file, "--no-outlook")
+    assert "made 0 report(s), kept 6 existing" in again

@@ -35,6 +35,10 @@ Personal information is used only to answer the parent's request, keep learners 
 the service (statistics, forecasts, fairness checks). Forecasting and statistics use only the date
 and category of each ticket. Reports contain counts only, never names or messages.
 
+The Weeks 3–4 analytics and weekly reports also use counts and times only. "Parents who wrote more
+than once" compares contact details inside the calculation, but only the **count** is kept or shown;
+stored reports (`weekly_reports`) and "report ready" emails contain no names, contacts or message text.
+
 ## 3. Sharing with AI services (conditions 4 and 7, section 72 cross-border transfer)
 
 By default (`LLM_PROVIDER=rules`) **nothing leaves the school's systems**. If the school enables an
@@ -92,6 +96,7 @@ enforces this on every request; the Streamlit pages only hide what the API would
 | Principal | Every ticket; forecast and risk pages; final fee exemption decisions |
 | Deputy principal | Tickets routed to or assigned to them, and **every learner-welfare / safety ticket**; forecast and risk pages |
 | Finance clerk, admin clerk, class teacher, IT support | Tickets routed to their role or assigned to them. **Never** learner-welfare / safety tickets. Finance clerk: fee exemption review steps |
+| Analytics & weekly reports (Weeks 3–4) | Principal: every department. Deputy principal: whole school and learner welfare. Everyone else: their own department only. Counts only |
 | Scheduler (`JOBS_TOKEN`) | Can trigger jobs only |
 | Gateway (`INBOUND_SECRET`) | Can create tickets only, with a signed request (`docs/INTEGRATIONS.md`) |
 

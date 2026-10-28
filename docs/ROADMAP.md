@@ -3,8 +3,8 @@
 One platform, built progressively. Tick each box only when it is built, tested and documented.
 
 > **Schedule change (Week 5):** the bootcamp moved straight from Week 1 to Week 5, so Weeks 2–4
-> were skipped. Their items stay below as optional backlog. What later weeks depend on is folded
-> in: Week 5 adds its own history charts, and Week 6 starts with a minimal response generator.
+> were skipped in the schedule. They have since been built: Week 2's reply generator as part of
+> Week 6, and Weeks 3–4 (analytics dashboard and weekly reports) after Week 7.
 
 ---
 
@@ -40,24 +40,27 @@ One platform, built progressively. Tick each box only when it is built, tested a
 - [x] UI: suggested-reply panel in staff inbox; instant acknowledgement (reference number) on parent page
 - [x] Tests: no invented facts (grounding check), tone differences, language notes, fallback
 
-## Week 3 — Data Tracking & Analytics Dashboard *(skipped; history charts now in Week 5)*
+## Week 3 — Data Tracking & Analytics Dashboard *(skipped in the schedule; built after Week 7)*
 **Outcome:** measurable business insights.
 
-- [ ] `ticket_events` table (status changes, assignments, responses)
-- [ ] Metrics: volume over time; by category, grade, language, urgency; first-response time; resolution time; open backlog; repeat contacts; unanswered tickets older than SLA
-- [ ] Streamlit dashboard page with plotly charts, date + category filters
-- [ ] AI weekly insights from computed numbers only (deterministic template fallback), no personal data
-- [ ] Tests for every metric
+- [x] `ticket_events` table (status changes, assignments, escalations, first responses) — built in Week 7
+- [x] Metrics (`app/analytics/metrics.py`): volume by topic, urgency, language, channel, grade band, weekday and day; first-response and resolution time (median, 90th percentile, in office hours); answered within the promised time; backlog and overdue at period end; escalations; repeat contacts; all compared with the previous period
+- [x] Week-by-week trends (messages, median first response, on-time rate)
+- [x] Streamlit **Analytics** page: department and period filters, KPI tiles with change, trend charts, topic table, breakdowns
+- [x] Weekly summary insights from computed numbers only (wins / concerns / info), no personal data
+- [x] Demo history keeps first-response times; fixed start date so results are reproducible
+- [x] Tests for every metric (hand-built tickets with known answers) and the insights
 
-## Week 4 — Business Reporting Automation *(skipped; optional backlog)*
+## Week 4 — Business Reporting Automation *(skipped in the schedule; built after Week 7)*
 **Outcome:** end-to-end reporting automation.
 
-- [ ] Weekly PDF (reportlab): executive summary, key metrics, charts, top issues, wins & concerns
-- [ ] Versions: principal/SGB (whole school) and per department / staff role
-- [ ] Endpoints: generate, list, download reports
-- [ ] Reports page in UI
-- [ ] Protected `/jobs/weekly-report` endpoint for scheduling
-- [ ] Reports stored so past weeks can be downloaded
+- [x] Weekly PDF (reportlab): executive summary, key figures vs previous week, 8-week charts, topics, wins & concerns, next week's outlook (Week 5 forecast)
+- [x] Versions: principal/SGB (whole school) and per department (admin, finance, teaching, welfare, IT)
+- [x] Optional AI executive summary, rejected if it adds any number not in the figures; audit-logged
+- [x] Endpoints: generate, list, download reports (access by role)
+- [x] **Weekly reports** page in the UI
+- [x] Protected `POST /jobs/weekly-reports` for scheduling (idempotent; notifies readers through the outbox) and `scripts/make_weekly_reports.py`
+- [x] Reports stored (`weekly_reports` table) so past weeks can be downloaded exactly as shared
 
 ## Week 5 — Predictive Insights
 **Outcome:** forward-looking decision-making.

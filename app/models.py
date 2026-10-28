@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, LargeBinary, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -201,3 +201,22 @@ class FeeExemption(Base):
     principal_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     decline_reason: Mapped[str | None] = mapped_column(Text, nullable=True)   # final reason, sent to the parent
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class WeeklyReport(Base):
+    """Weeks 3-4: one stored weekly business report (whole school or one department).
+
+    The PDF is stored as generated, so past weeks can be downloaded exactly as they were
+    shared. `data` holds the figures and insights (counts only; no personal data).
+    """
+
+    __tablename__ = "weekly_reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    week_start: Mapped[str] = mapped_column(String(10), index=True)     # Monday, YYYY-MM-DD
+    scope: Mapped[str] = mapped_column(String(30), index=True)          # "school" or a staff role
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_by: Mapped[str] = mapped_column(String(120))                # staff name, or "scheduler"
+    summary_method: Mapped[str] = mapped_column(String(30), default="template")
+    data: Mapped[dict] = mapped_column(JSON)
+    pdf: Mapped[bytes] = mapped_column(LargeBinary)

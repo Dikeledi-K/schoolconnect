@@ -98,7 +98,8 @@ could be added later, as long as it is rejected whenever it adds a number not in
 See [forecast_evaluation.md](forecast_evaluation.md) (regenerate with
 `python scripts/evaluate_forecast.py`). Headlines:
 
-- Overall error 22% vs 39% for "same as last week" (43% better).
+- Backtest before the January demo (20 Oct – 14 Dec 2025): overall error 22% vs 30% for "same as
+  last week" (27% better). (The "current forecast" figures change daily as new weeks are tested.)
 - Forecasting January 2026 from 15 December 2025: 16% error over 12–30 January; 84% of days
   inside the 80% range; admin clerk forecast at 86% of capacity in the week of 19 January,
   actual 88%.

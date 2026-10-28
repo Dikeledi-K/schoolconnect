@@ -1,6 +1,6 @@
 # Forecast evaluation
 
-_Generated 2026-10-26 by `scripts/evaluate_forecast.py` on the synthetic demo data. Re-run after regenerating data._
+_Generated 2026-10-28 by `scripts/evaluate_forecast.py` on the synthetic demo data. Re-run after regenerating data._
 
 Methods:
 
@@ -13,27 +13,27 @@ Rule: each category uses its most accurate baseline, and switches to machine lea
 
 ## Current forecast
 
-Forecast start (as of): **2026-10-26**. Backtest window: 2026-08-31 to 2026-10-25 (56 days, 4 rolling 14-day forecasts).
+Forecast start (as of): **2026-10-28**. Backtest window: 2026-09-02 to 2026-10-27 (56 days, 4 rolling 14-day forecasts).
 
 | Measure | Value |
 |---|---|
-| Overall error of SchoolConnect forecast (WAPE) | **22.0%** |
-| Simple 'same as last week' rule (WAPE) | 38.7% |
-| Improvement over the simple rule | 43% |
-| Average error per day (MAE, all messages) | ±3.3 messages |
-| 80% range for the daily total | 0.65× to 1.54× the forecast |
+| Overall error of SchoolConnect forecast (WAPE) | **21.6%** |
+| Simple 'same as last week' rule (WAPE) | 33.0% |
+| Improvement over the simple rule | 34% |
+| Average error per day (MAE, all messages) | ±3.4 messages |
+| 80% range for the daily total | 0.65× to 1.62× the forecast |
 
 WAPE per category and method (lower is better; **bold** = method chosen):
 
 | Category | Same as last week | Same day last year | Recent average | Machine learning |
 |---|---|---|---|---|
-| academic | 92% | 56% | 56% | **40%** |
-| admissions | 82% | 75% | 124% | **52%** |
-| fees_exemptions | 67% | 68% | 55% | **40%** |
-| it_portal | 84% | 78% | **53%** | 64% |
-| learner_welfare | 104% | 142% | **78%** | 77% |
-| other | 82% | 74% | **43%** | 44% |
-| transport | 81% | 68% | 71% | **45%** |
+| academic | 84% | 57% | 56% | **39%** |
+| admissions | 77% | 72% | 104% | **54%** |
+| fees_exemptions | 58% | 68% | 61% | **46%** |
+| it_portal | 64% | 79% | **52%** | 61% |
+| learner_welfare | 95% | 144% | 82% | **80%** |
+| other | 60% | 78% | 44% | **42%** |
+| transport | 72% | 70% | 67% | **46%** |
 
 ## Backtest demo: forecasting the January rush
 

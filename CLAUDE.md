@@ -44,8 +44,9 @@ progressively: each week adds a module (see `docs/ROADMAP.md`).
 11. Commits are authored by the developer only. Never add AI co-author or attribution trailers.
 
 ## Schedule note
-The bootcamp moved from Week 1 straight to Week 5; Weeks 2–4 were skipped (see docs/ROADMAP.md).
-Week 6 therefore starts with a minimal response generator.
+The bootcamp moved from Week 1 straight to Week 5; Weeks 2–4 were skipped in the schedule
+(see docs/ROADMAP.md). They are built since: Week 2 inside Week 6, Weeks 3–4 after Week 7.
+Only Week 8 remains.
 
 ## Folder conventions
 ```
@@ -86,5 +87,6 @@ python scripts/generate_history.py --reset   # Week 5: ~24 months of synthetic h
 python scripts/evaluate_forecast.py          # Week 5: writes docs/forecast_evaluation.md
 python scripts/demo_week6.py --password "..."  # Week 6: live demo tickets, corrections, replies
 python scripts/demo_week7.py --password "..."  # Week 7: demo staff, workflow, fee exemption, escalation
+python scripts/make_weekly_reports.py --weeks 4 # Weeks 3-4: weekly PDF reports
 streamlit run frontend/Home.py
 ```

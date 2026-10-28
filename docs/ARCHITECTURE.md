@@ -373,3 +373,70 @@ Every endpoint marked "API key*" in the Week 1, 5 and 6 tables now **also needs 
   parent.
 - **Signed timestamp.** The webhook signs `timestamp.body`, not just the body. An old signature can
   then not be replayed with a new timestamp.
+
+## Weeks 3–4 additions: analytics dashboard and weekly business reports
+
+Weeks 3 and 4 were skipped in the bootcamp schedule and built after Week 7, so they reuse the
+Week 7 data (first responses, events, escalations, logins) and the Week 5 forecast.
+
+```mermaid
+flowchart TB
+    T[("tickets<br/>created, first response,<br/>resolved, category")] --> M["analytics/metrics.py<br/>volumes, office-hour response times,<br/>promises kept, backlog, trends"]
+    E[("ticket_events<br/>escalations")] --> M
+    R[("responses<br/>approved replies")] --> M
+    W["config/workflow.yaml<br/>promises + 90% target"] --> M
+    M --> I["analytics/insights.py<br/>wins / concerns / info<br/>(templates only)"]
+    I --> S["executive summary<br/>template, or AI rewrite<br/>rejected if new numbers"]
+    F["Week 5 forecast"] --> O["outlook: next week's<br/>messages, busy roles, spikes"]
+    M --> P["reports/pdf.py<br/>reportlab + charts"]
+    I --> P
+    S --> P
+    O --> P
+    P --> WR[("weekly_reports<br/>data + PDF")]
+    J["POST /jobs/weekly-reports<br/>(scheduler, idempotent)"] --> P
+    J --> OB[("outbox: 'report ready'")]
+    M --> A["Streamlit: Analytics"]
+    WR --> WP["Streamlit: Weekly reports"]
+```
+
+| Part | File(s) | Responsibility |
+|---|---|---|
+| Departments | `app/taxonomy.py` (`DEPARTMENT_NAMES`, `categories_for_department`) | Whole school + one department per routed staff role, derived from category routing |
+| Metrics | `app/analytics/metrics.py` | Figures for a period vs the previous one; weekly trends. Office hours from the Week 7 SLA calendar |
+| Insights | `app/analytics/insights.py` | Plain-language wins/concerns, executive summary (optional AI, number-checked), outlook from the forecast |
+| Report | `app/reports/weekly.py`, `app/reports/pdf.py` | Build, store and list weekly reports; access by role; scheduled job |
+| API | `app/api/reports.py`, `/jobs/weekly-reports` in `app/main.py` | Dashboard data, reports, PDF download |
+| Script | `scripts/make_weekly_reports.py` | Same as the job, from the command line |
+
+### Weeks 3–4 endpoints
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| GET | `/analytics/scopes` | staff login | Departments I may see (principal: all; deputy: school + welfare; others: own) |
+| GET | `/analytics/summary` | staff login | Figures for `start`..`end` (default last full week) + insights + summary |
+| GET | `/analytics/trends` | staff login | Weekly messages, median first response, on-time rate (`weeks` 1–52) |
+| GET | `/reports/weeks` | staff login | Mondays of recent completed weeks |
+| GET | `/reports` | staff login | Stored reports I may see |
+| POST | `/reports/weekly` | staff login | Make (or remake) a report for a week and department |
+| GET | `/reports/{id}/pdf` | staff login | Download a stored report (404 if not allowed) |
+| POST | `/jobs/weekly-reports` | X-Jobs-Token | Make last week's reports for every department; keeps existing unless `force` |
+
+### Data model (Weeks 3–4)
+
+`weekly_reports`: id, week_start (Monday), scope ("school" or a staff role), created_at, created_by
+(staff name or "scheduler"), summary_method, data (JSON figures and insights; counts only), pdf (bytes).
+
+### Design decisions
+
+- **Office hours, not clock hours.** Response times exclude evenings, weekends and public holidays,
+  so a Friday-evening message answered on Monday morning is not "65 hours late".
+- **Median, not average.** One very slow reply does not distort the picture.
+- **Two moments.** Response times use everything known when the figures are calculated; the backlog
+  is "as at the end of the period".
+- **Rounding never hides a miss:** 89.5% against a 90% target is shown as 89.5%, not 90%.
+- **Single-threaded forecasting model.** The API runs each request in its own thread; letting every
+  thread start its own OpenMP pool made later forecasts about 4× slower on a 2-core machine, so the
+  (small) gradient-boosting model is limited to one thread. Results are identical.
+- **Week 8 note:** the scheduled job builds 6 reports including a forecast outlook (~15–30 s). On
+  Vercel, give the job function a longer `maxDuration` or run `scripts/make_weekly_reports.py` from
+  a GitHub Actions schedule.

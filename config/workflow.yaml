@@ -41,3 +41,7 @@ escalation_chain:
   it_support: principal
   deputy_principal: principal
   # principal: top of the chain
+
+# Weeks 3-4 analytics and weekly reports: the share of messages that should get a first
+# response within the promised time. Below this, the report lists it as a concern.
+sla_target_rate: 0.90

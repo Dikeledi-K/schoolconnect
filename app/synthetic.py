@@ -182,9 +182,10 @@ def generate_tickets(start, end, seed: int = 42, now: datetime | None = None) ->
         day = f"{t['created_at']:%Y%m%d}"
         per_day[day] = per_day.get(day, 0) + 1
         t["reference"] = f"SC-{day}-{per_day[day]:04d}"
-        t.pop("first_response_at")              # only used to set status; not a ticket column
         # Store every timestamp in UTC (the database convention for all tickets).
-        for key in ("created_at", "updated_at", "resolved_at"):
+        # first_response_at is kept (a ticket column since Week 7) so the Week 3 analytics can
+        # measure response times; busy days get slower responses (see _add_response_times).
+        for key in ("created_at", "updated_at", "first_response_at", "resolved_at"):
             if t[key] is not None:
                 t[key] = t[key].astimezone(timezone.utc)
     return tickets

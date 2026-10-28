@@ -284,3 +284,41 @@ def risk_report_pdf(days: int = 30) -> bytes:
         raise ApiError(f"Could not reach the SchoolConnect API at {base_url()}.") from exc
     _raise_for(response)
     return response.content
+
+
+# ---- Weeks 3-4: analytics dashboard and weekly reports --------------------
+def analytics_scopes() -> list[dict]:
+    return _request("GET", "/analytics/scopes")
+
+
+def analytics_summary(start: str | None = None, end: str | None = None, scope: str | None = None) -> dict:
+    params = {k: v for k, v in {"start": start, "end": end, "scope": scope}.items() if v}
+    return _request("GET", "/analytics/summary", params=params)
+
+
+def analytics_trends(weeks: int = 12, scope: str | None = None) -> dict:
+    params = {"weeks": weeks, **({"scope": scope} if scope else {})}
+    return _request("GET", "/analytics/trends", params=params)
+
+
+def report_weeks(count: int = 12) -> list[str]:
+    return _request("GET", "/reports/weeks", params={"count": count})
+
+
+def list_reports(scope: str | None = None) -> list[dict]:
+    return _request("GET", "/reports", params={"scope": scope} if scope else None)
+
+
+def create_report(week_start: str, scope: str) -> dict:
+    return _request("POST", "/reports/weekly", json={"week_start": week_start, "scope": scope})
+
+
+def report_pdf(report_id: int) -> bytes:
+    """The PDF bytes (not JSON), so this call does not use _request()."""
+    try:
+        response = requests.get(f"{base_url()}/reports/{report_id}/pdf", headers=_headers(),
+                                timeout=TIMEOUT_SECONDS)
+    except requests.RequestException as exc:
+        raise ApiError(f"Could not reach the SchoolConnect API at {base_url()}.") from exc
+    _raise_for(response)
+    return response.content

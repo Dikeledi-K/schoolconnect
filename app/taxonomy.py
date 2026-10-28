@@ -375,3 +375,29 @@ def taxonomy_as_dict() -> dict:
         "account_roles": [{"code": k, "name": v} for k, v in ACCOUNT_ROLES.items()],
         "grades": GRADES,
     }
+
+
+# --------------------------------------------------------------------------
+# Weeks 3-4: departments for analytics and weekly reports.
+# A department = the staff role that a set of categories is routed to, so this follows
+# CATEGORIES automatically. "school" is the whole school (principal / SGB report).
+# --------------------------------------------------------------------------
+SCHOOL_SCOPE = "school"
+DEPARTMENT_NAMES: dict[str, str] = {
+    SCHOOL_SCOPE: "Whole school (Principal & SGB)",
+    "admin_clerk": "Admin office",
+    "finance_clerk": "Finance office",
+    "class_teacher": "Teaching staff (academic)",
+    "deputy_principal": "Learner welfare (Deputy Principal)",
+    "it_support": "IT support",
+}
+
+
+def categories_for_department(scope: str) -> list[str]:
+    """Categories in a department's report. The whole school gets every category."""
+    if scope == SCHOOL_SCOPE:
+        return list(CATEGORIES)
+    if scope not in STAFF_ROLES:
+        raise ValueError(f"Unknown department '{scope}'")
+    return [code for code, c in CATEGORIES.items() if c.routed_role == scope]
+

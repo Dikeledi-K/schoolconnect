@@ -60,6 +60,7 @@ from app.api import auth as auth_api
 from app.api import workflow as workflow_api
 from app.api import fees as fees_api
 from app.api import integrations as integrations_api
+from app.api import reports as reports_api
 from app.workflow.intake import intake_ticket
 from app.api.workflow import with_sla
 from app.workflow.escalation import run_escalations
@@ -101,6 +102,7 @@ app.include_router(auth_api.router)
 app.include_router(workflow_api.router)
 app.include_router(fees_api.router)
 app.include_router(integrations_api.router)
+app.include_router(reports_api.router)   # Weeks 3-4: analytics and weekly reports
 
 
 def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
@@ -493,3 +495,16 @@ def escalate_job(db: Session = Depends(get_db)) -> dict:
 def retention_job(dry_run: bool = True, db: Session = Depends(get_db)) -> dict:
     """POPIA retention: anonymise resolved tickets older than RETENTION_DAYS. Dry run by default."""
     return run_retention(db, dry_run=dry_run)
+
+
+@app.post("/jobs/weekly-reports", tags=["jobs"], dependencies=[Depends(require_jobs_token)])
+def weekly_reports_job(week_start: date | None = None, force: bool = False, db: Session = Depends(get_db)) -> dict:
+    """Weeks 3-4: make last week's reports (whole school + each department) and tell the readers.
+    Reports that already exist are kept unless force=true, so running it twice is harmless."""
+    from app.reports.weekly import ReportError, run_weekly_job
+
+    try:
+        return run_weekly_job(db, week_start=week_start, force=force)
+    except ReportError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+

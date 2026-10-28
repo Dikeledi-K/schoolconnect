@@ -84,11 +84,16 @@ demo data every time. Older tickets are mostly resolved; a few old ones stay
 ## Week 5: synthetic ticket history (`scripts/generate_history.py`)
 
 Forecasting needs much more history than 150 messages, so Week 5 adds a generator
-(`app/synthetic.py`) that creates about **9,800 synthetic tickets over 24 months**, ending yesterday.
+(`app/synthetic.py`) that creates about **9,800 synthetic tickets from 25 October 2024 up to yesterday**.
+
+The start date is **fixed**, so the history is identical whichever day you generate it (each day's
+tickets depend only on the days before it); a later run only adds the newer days. This keeps the
+documented results reproducible, e.g. the January 2026 backtest. Tickets also record when they
+first got a response (`first_response_at`), which the Weeks 3–4 analytics use.
 
 ```bash
-python scripts/generate_history.py --reset            # deletes ALL tickets, then generates (seed 42)
-python scripts/generate_history.py --months 18 --seed 7
+python scripts/generate_history.py --reset            # drops ALL tables (tickets, staff accounts, reports), then generates (seed 42)
+python scripts/generate_history.py --start 2025-01-01 --seed 7   # a different, still reproducible history
 ```
 
 Use it **instead of** `seed_db.py` for forecasting demos (running both would double-count recent weeks).

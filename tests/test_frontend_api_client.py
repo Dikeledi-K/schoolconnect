@@ -88,3 +88,21 @@ def test_approve_and_edit_no_longer_send_names(token):
         assert request.call_args.kwargs["json"] == {}
         api_client.edit_reply(5, "new text")
         assert request.call_args.kwargs["json"] == {"body": "new text"}
+
+
+# ---- Weeks 3-4: analytics and weekly reports -------------------------------
+def test_report_pdf_download_sends_the_token(token):
+    pdf = MagicMock(status_code=200, content=b"%PDF-1.4 test")
+    with patch("requests.get", return_value=pdf) as get:
+        assert api_client.report_pdf(7) == b"%PDF-1.4 test"
+    url, kwargs = get.call_args.args[0], get.call_args.kwargs
+    assert url.endswith("/reports/7/pdf") and kwargs["headers"]["Authorization"].startswith("Bearer ")
+
+
+def test_create_report_and_summary_requests(token):
+    with patch("requests.request", return_value=_response(201, {"id": 1})) as request:
+        api_client.create_report("2026-03-02", "school")
+    assert request.call_args.kwargs["json"] == {"week_start": "2026-03-02", "scope": "school"}
+    with patch("requests.request", return_value=_response(200, {"metrics": {}})) as request:
+        api_client.analytics_summary(start="2026-03-02", end="2026-03-08")
+    assert request.call_args.kwargs["params"] == {"start": "2026-03-02", "end": "2026-03-08"}

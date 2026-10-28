@@ -16,6 +16,7 @@ in the backtest (see evaluate.py).
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
+from threadpoolctl import threadpool_limits   # installed with scikit-learn
 
 from app.forecasting.calendar import FLAG_COLUMNS
 
@@ -117,9 +118,13 @@ def ml_calendar(history: pd.Series, future_dates, cal: pd.DataFrame, seed: int =
     model = HistGradientBoostingRegressor(
         loss="poisson", max_iter=150, learning_rate=0.06, min_samples_leaf=5, random_state=seed
     )
-    model.fit(X_train[useful], history.to_numpy())
     X_future = _ml_frame(history, future_dates, cal).fillna(-1)
-    return model.predict(X_future[useful])
+    # One thread: the data is tiny (~700 days), and the API runs each request in a different
+    # thread. Letting every thread start its own pool of OpenMP workers made later forecasts
+    # about 4x slower on a 2-core machine (idle pools keep the CPUs busy).
+    with threadpool_limits(limits=1, user_api="openmp"):
+        model.fit(X_train[useful], history.to_numpy())
+        return model.predict(X_future[useful])
 
 
 MODELS = {

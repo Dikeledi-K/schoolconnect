@@ -199,3 +199,20 @@ def test_make_forecast_horizon_is_capped(demo_bundle):
     b = demo_bundle
     fc = make_forecast(b["history"], b["cal"], b["evaluation"]["chosen"], b["evaluation"]["intervals"], days=500)
     assert fc["date"].nunique() == 60
+
+
+def test_history_is_the_same_whatever_day_it_is_generated():
+    """A fixed start date gives identical history for the overlapping days, so documented
+    results (e.g. the January 2026 backtest) reproduce on any day."""
+    from datetime import datetime, timezone
+
+    later = datetime(2027, 1, 1, tzinfo=timezone.utc)
+    short = generate_tickets("2025-01-01", "2025-02-28", seed=3, now=later)
+    long = generate_tickets("2025-01-01", "2025-04-30", seed=3, now=later)
+    cutoff = max(t["created_at"] for t in short)
+
+    def key(t):
+        return (t["created_at"], t["category"], t["message"], t["first_response_at"])
+
+    assert [key(t) for t in short] == [key(t) for t in long if t["created_at"] <= cutoff]
+    assert all(t["first_response_at"] is not None for t in short)   # kept for the Week 3 analytics

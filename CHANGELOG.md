@@ -2,6 +2,35 @@
 
 All notable changes, one section per bootcamp week.
 
+## [weeks-3-4] 2026-10-28: Analytics dashboard and weekly business reports
+
+Weeks 3 and 4 were skipped in the bootcamp schedule; built now on top of Week 7.
+
+### Added
+- `app/analytics/metrics.py`: figures for any period and department vs the previous period
+  (volumes, office-hour first-response and resolution times, answered within the promised time,
+  backlog, escalations, repeat contacts) and weekly trends.
+- `app/analytics/insights.py`: plain-language wins/concerns, executive summary (optional AI,
+  rejected if it adds numbers; audit-logged), next week's outlook from the Week 5 forecast.
+- `app/reports/` (`weekly.py`, `pdf.py`): weekly PDF per department and for the whole school,
+  stored in a new `weekly_reports` table; access by role.
+- Endpoints: `/analytics/scopes`, `/analytics/summary`, `/analytics/trends`, `/reports/weeks`,
+  `/reports`, `POST /reports/weekly`, `/reports/{id}/pdf`, `POST /jobs/weekly-reports`.
+- Streamlit pages *Analytics* and *Weekly reports*; Home cards; pages renumbered (Forecast 8, Risk 9;
+  URLs unchanged).
+- `scripts/make_weekly_reports.py`; `DEPARTMENT_NAMES` and `categories_for_department` in the
+  taxonomy; `sla_target_rate` in `config/workflow.yaml`.
+- Tests: `test_analytics.py`, `test_reports.py`, frontend client tests, history reproducibility.
+- Docs: `docs/weekly/WEEK_3_4.md`; ROADMAP Weeks 3–4 ticked; README, ARCHITECTURE, POPIA, DATA updated.
+
+### Fixed
+- Demo history dropped first-response times (the column only arrived in Week 7); now kept.
+- Demo history started "24 months before today", so documented results changed with the date it was
+  generated. It now starts on a fixed date (25 Oct 2024) and reproduces the documented January 2026
+  backtest exactly. README/FORECASTING/WEEK_5 now quote that stable backtest (22% vs 30%).
+- Forecasting model limited to one thread: after one forecast in a process, later forecasts in
+  another thread (every API request) were up to 4x slower on 2 cores. Results are identical.
+
 ## [week-7.1] 2026-10-28: Audit fixes (Weeks 1–7 review)
 
 ### Fixed

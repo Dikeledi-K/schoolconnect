@@ -23,10 +23,15 @@ cards = [
      [("pages/2_My_work.py", "✅", "My work"), ("pages/3_Staff_inbox.py", "📥", "Staff inbox")]),
     ("For finance & principal", "Fee exemption requests: documents, recommendation, decision, letter.",
      [("pages/4_Fee_exemptions.py", "💰", "Fee exemptions")]),
-    ("For the principal / SGB", "Busy periods ahead, and whether the AI is safe, fair and POPIA-compliant.",
-     [("pages/5_Forecast_and_workload.py", "📈", "Forecast"), ("pages/6_Risk_and_compliance.py", "🛡️", "Risk")]),
+    ("For managers & SGB", "How the week went (volumes, response times, promises kept) and the weekly report.",
+     [("pages/6_Analytics.py", "📊", "Analytics"), ("pages/7_Weekly_reports.py", "🗂️", "Weekly reports")]),
+    ("For the principal", "Busy periods ahead, and whether the AI is safe, fair and POPIA-compliant.",
+     [("pages/8_Forecast_and_workload.py", "📈", "Forecast"), ("pages/9_Risk_and_compliance.py", "🛡️", "Risk")]),
 ]
-for col, (audience, text, links) in zip(st.columns(4), cards):
+# Rows of three, so the buttons have room for their labels.
+CARDS_PER_ROW = 3
+slots = [col for _ in range(0, len(cards), CARDS_PER_ROW) for col in st.columns(CARDS_PER_ROW)]
+for col, (audience, text, links) in zip(slots, cards):
     with col.container(border=True, height="stretch"):
         st.caption(audience.upper())
         for path, icon, label in links:

@@ -36,7 +36,7 @@ schedule moved to Week 5).
 
 | Criterion | Evidence |
 |---|---|
-| Accurate analysis | 22% error vs 39% baseline; January rush forecast within 16%; admin clerk 86% forecast vs 88% actual ([forecast_evaluation.md](../forecast_evaluation.md)); no-leakage test |
+| Accurate analysis | 22% error vs 30% baseline (backtest 20 Oct – 14 Dec 2025); January rush forecast within 16%; admin clerk 86% forecast vs 88% actual ([forecast_evaluation.md](../forecast_evaluation.md)); no-leakage test |
 | Working dashboard | Streamlit page: KPIs, history + forecast chart with calendar and 80% range, workload heatmap, scenario control, spikes, accuracy table |
 
 **Professional skills (40%)**
@@ -58,7 +58,7 @@ schedule moved to Week 5).
    (105% in a busy week) in the week of 19 January. In the weekly table: **actual 88%**.
 4. **(45s) Scenario.** Open "What if staff capacity changes?", set Admin Clerk to 2 — utilisation
    halves. "A temporary assistant for two weeks solves it."
-5. **(45s) Trust.** Scroll to "How accurate is this?": 22% error vs 39% for the simple rule;
+5. **(45s) Trust.** Scroll to "How accurate is this?" (backtest view, 15 Dec 2025): 22% error vs 30% for the simple rule;
    machine learning is only used where it beats simple methods.
 6. **(30s) Honesty and next steps.** Synthetic data, approximate calendar, one previous January.
    Week 6 adds POPIA protection, bias checks and audit logs.
