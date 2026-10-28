@@ -106,3 +106,10 @@ def test_create_report_and_summary_requests(token):
     with patch("requests.request", return_value=_response(200, {"metrics": {}})) as request:
         api_client.analytics_summary(start="2026-03-02", end="2026-03-08")
     assert request.call_args.kwargs["params"] == {"start": "2026-03-02", "end": "2026-03-08"}
+
+
+def test_reference_is_cleaned_before_the_request(token):
+    assert api_client.clean_reference(" sc-20261028-0009. ") == "SC-20261028-0009"
+    with patch("requests.request", return_value=_response(200, {})) as request:
+        api_client.ticket_by_reference("SC-20261028-0009.")
+    assert request.call_args.args[1].endswith("/tickets/by-reference/SC-20261028-0009")

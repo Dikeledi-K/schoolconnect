@@ -128,3 +128,12 @@ def test_guessed_reference_does_not_reveal_a_welfare_concern(client):
     data = client.get(f"/tickets/by-reference/{ref}").json()
     assert set(data) == {"reference", "status", "created_at", "updated_at", "reply_status"}
     assert "welfare" not in str(data) and "high" not in str(data) and "critical" not in str(data)
+
+
+def test_by_reference_forgives_how_parents_type_it(client):
+    """A parent copied "SC-…-0001." with the full stop from the confirmation message."""
+    ref = create(client)["reference"]
+    for typed in (f"{ref}.", f" {ref} ", ref.lower(), f"Ref: {ref}", f"{ref},"):
+        r = client.get(f"/tickets/by-reference/{typed}")
+        assert r.status_code == 200 and r.json()["reference"] == ref, typed
+    assert client.get("/tickets/by-reference/SC-2026.").status_code == 404

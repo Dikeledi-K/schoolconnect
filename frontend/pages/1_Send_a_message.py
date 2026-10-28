@@ -46,8 +46,10 @@ if submitted:
         else:
             if result["urgency"] == "critical":
                 st.error(f"🚨 {result['safety_notice']}")
-            st.success(f"Thank you, your message was received. "
-                       f"Your reference number is **{result['reference']}**.")
+            # The reference stands on its own (no full stop next to it), with a copy button,
+            # so parents copy exactly the right text.
+            st.success("Thank you, your message was received. Your reference number is:")
+            st.code(result["reference"], language=None)
             c1, c2 = st.columns(2)
             c1.metric("Topic", result["category_name"])
             c2.metric("Urgency", URGENCY_BADGE[result["urgency"]])

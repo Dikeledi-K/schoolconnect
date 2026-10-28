@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 
 from sqlalchemy import func, or_, select
@@ -103,8 +104,21 @@ def get_ticket(db: Session, ticket_id: int) -> Ticket | None:
     return db.get(Ticket, ticket_id)
 
 
+REFERENCE_RE = re.compile(r"SC-\d{8}-\d{4}", re.IGNORECASE)
+
+
+def normalise_reference(text: str) -> str:
+    """Find the reference in what a parent typed or pasted.
+
+    Parents copy it with a full stop after it, with spaces, in lower case, or as
+    "Ref: SC-20261028-0009", so we look for the SC-YYYYMMDD-NNNN pattern anywhere.
+    """
+    match = REFERENCE_RE.search(text or "")
+    return match.group(0).upper() if match else (text or "").strip().upper()
+
+
 def get_ticket_by_reference(db: Session, reference: str) -> Ticket | None:
-    return db.scalar(select(Ticket).where(Ticket.reference == reference.strip().upper()))
+    return db.scalar(select(Ticket).where(Ticket.reference == normalise_reference(reference)))
 
 
 def update_status(db: Session, ticket: Ticket, status: str, actor: str | None = None,

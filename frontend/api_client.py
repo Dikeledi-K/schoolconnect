@@ -12,6 +12,8 @@ session, never on disk) and is sent with every request as  Authorization: Bearer
 from __future__ import annotations
 
 import os
+import re
+from urllib.parse import quote
 
 import requests
 import streamlit as st
@@ -143,8 +145,14 @@ def list_tickets(**filters) -> list[dict]:
     return _request("GET", "/tickets", params=params)
 
 
+def clean_reference(text: str) -> str:
+    """Keep only the SC-YYYYMMDD-NNNN part of what a parent typed (e.g. a trailing full stop)."""
+    match = re.search(r"SC-\d{8}-\d{4}", text or "", re.IGNORECASE)
+    return match.group(0).upper() if match else (text or "").strip()
+
+
 def ticket_by_reference(reference: str) -> dict:
-    return _request("GET", f"/tickets/by-reference/{reference.strip()}")
+    return _request("GET", f"/tickets/by-reference/{quote(clean_reference(reference), safe='')}")
 
 
 def update_status(ticket_id: int, status: str) -> dict:
