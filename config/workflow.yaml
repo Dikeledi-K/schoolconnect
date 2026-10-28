@@ -1,0 +1,43 @@
+# Week 7 workflow rules: response-time targets (SLAs) and who a late ticket escalates to.
+#
+# The first-response targets MUST match the promises made to parents in
+# config/school_info.yaml (response_times). A test checks this.
+#
+# "School days" = office days: Monday to Friday, excluding the public holidays in
+# config/school_calendar.yaml (the same calendar as the Week 5 forecast).
+
+timezone: "Africa/Johannesburg"
+
+# Same as school_info.yaml office_hours ("Monday to Friday, 07:30 to 15:30").
+office_hours:
+  start: "07:30"
+  end: "15:30"
+
+# How long the school has to give a FIRST response (move to "in progress" or approve a reply).
+first_response:
+  critical: {hours: 1}          # clock hours, day or night: a child may be in danger
+  high: {school_days: 1}        # "within 1 school day"
+  medium: {school_days: 2}      # "within 2 school days"
+  low: {school_days: 5}         # "within 5 school days"
+
+# "Due soon" warning when less than this much time is left
+# (office hours for school-day targets, clock hours for critical).
+due_soon_hours:
+  critical: 0.25
+  high: 2
+  medium: 4
+  low: 8
+
+# A critical ticket nobody has acknowledged after this many minutes alerts BOTH the
+# deputy principal and the principal (before the 1-hour target is even missed).
+critical_acknowledge_minutes: 30
+
+# Overdue tickets move one level up this chain each time they miss a target.
+# After an escalation the new owner gets a fresh target window.
+escalation_chain:
+  class_teacher: deputy_principal
+  admin_clerk: principal
+  finance_clerk: principal
+  it_support: principal
+  deputy_principal: principal
+  # principal: top of the chain

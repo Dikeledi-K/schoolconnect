@@ -97,9 +97,10 @@ def alert_seniors_of_new_critical(db: Session, ticket: Ticket, assignee: Staff |
 def notify_assignee(db: Session, ticket: Ticket, staff: Staff, reason: str = "assigned") -> None:
     """Email the new owner (reference, category, urgency only - see notify/messages.py)."""
     from app.notify import messages, outbox
+    from app.workflow.sla import due_text
 
-    outbox.notify_staff(db, staff, *messages.staff_alert(ticket, reason), kind=f"staff_{reason}",
-                        ticket_id=ticket.id)
+    outbox.notify_staff(db, staff, *messages.staff_alert(ticket, reason, due_text(ticket)),
+                        kind=f"staff_{reason}", ticket_id=ticket.id)
 
 
 def reassign(db: Session, ticket: Ticket, target: Staff, actor: Staff, reason: str | None = None,

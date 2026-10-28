@@ -91,6 +91,8 @@ class TicketOut(BaseModel):
     assigned_to: int | None = None
     first_response_at: datetime | None = None
     escalation_level: int = 0
+    # {"status": on_track|due_soon|overdue|met, "due_at", "hours_left", "label"} (app/workflow/sla.py)
+    sla: dict | None = None
 
 
 class TicketCreated(BaseModel):

@@ -13,9 +13,21 @@ from app.db import get_db
 from app.models import Staff
 from app.notify import outbox
 from app.schemas import AssignRequest, OutboxOut, StaffOut, TicketEventOut, TicketOut
+from app.models import Ticket
+from app.taxonomy import URGENCY_LEVELS
 from app.workflow import assignment, events
+from app.workflow.sla import sla_status
 
 router = APIRouter(tags=["workflow"])
+
+SLA_ORDER = {"overdue": 0, "due_soon": 1, "on_track": 2, "met": 3}
+
+
+def with_sla(tickets: list[Ticket]) -> list[Ticket]:
+    """Attach the SLA status to each ticket for the response (not stored in the database)."""
+    for t in tickets:
+        t.sla = sla_status(t).as_dict()
+    return tickets
 
 
 def visible_ticket(db: Session, ticket_id: int, staff: Staff):
@@ -30,6 +42,15 @@ def visible_ticket(db: Session, ticket_id: int, staff: Staff):
 def list_staff(db: Session = Depends(get_db), _: Staff = Depends(current_staff)):
     """Colleagues, e.g. for the "reassign to" list."""
     return list(db.scalars(select(Staff).order_by(Staff.role, Staff.name)))
+
+
+@router.get("/workflow/my-work", response_model=list[TicketOut])
+def my_work(db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
+    """My open tickets: overdue first, then most urgent, then soonest due."""
+    query = select(Ticket).where(Ticket.assigned_to == staff.id, Ticket.status != "resolved")
+    tickets = with_sla(list(db.scalars(query)))
+    tickets.sort(key=lambda t: (SLA_ORDER[t.sla["status"]], -URGENCY_LEVELS.index(t.urgency), t.sla["due_at"]))
+    return tickets
 
 
 @router.get("/tickets/{ticket_id}/events", response_model=list[TicketEventOut])

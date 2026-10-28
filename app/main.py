@@ -59,6 +59,8 @@ from app.taxonomy import CATEGORIES, SENIOR_ROLES, STAFF_ROLES, taxonomy_as_dict
 from app.api import auth as auth_api
 from app.api import workflow as workflow_api
 from app.workflow.intake import intake_ticket
+from app.api.workflow import with_sla
+from app.workflow.escalation import run_escalations
 from app.auth.access import can_see_ticket, visible_tickets_filter
 from app.auth.deps import current_staff, require_roles
 from app.models import Staff
@@ -207,16 +209,17 @@ def list_tickets(
     db: Session = Depends(get_db),
     staff: Staff = Depends(current_staff),
 ):
-    return crud.list_tickets(
+    tickets = crud.list_tickets(
         db, status=status, category=category, urgency=urgency, language=language,
         routed_role=routed_role, needs_human=needs_human, search=search,
         limit=limit, offset=offset, visible=visible_tickets_filter(staff),
     )
+    return with_sla(tickets)
 
 
 @app.get("/tickets/{ticket_id}", response_model=TicketOut, dependencies=[Depends(require_api_key)])
 def get_ticket(ticket_id: int, db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
-    return _ticket_or_404(db, ticket_id, staff)
+    return with_sla([_ticket_or_404(db, ticket_id, staff)])[0]
 
 
 @app.patch(
@@ -474,6 +477,12 @@ def risk_report(days: int = Query(30, ge=1, le=365), db: Session = Depends(get_d
     pdf = build_pdf(build_summary(db, days), load_school_info()["school"]["name"])
     return HTTPResponse(content=pdf, media_type="application/pdf",
                         headers={"Content-Disposition": 'attachment; filename="schoolconnect-risk-report.pdf"'})
+
+
+@app.post("/jobs/escalate", tags=["jobs"], dependencies=[Depends(require_jobs_token)])
+def escalate_job(db: Session = Depends(get_db)) -> dict:
+    """Week 7: escalate overdue tickets and alert on unacknowledged critical ones. Safe to run often."""
+    return run_escalations(db)
 
 
 @app.post("/jobs/retention", tags=["jobs"], dependencies=[Depends(require_jobs_token)])
