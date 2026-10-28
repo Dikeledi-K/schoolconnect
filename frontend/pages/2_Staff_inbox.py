@@ -8,12 +8,12 @@ import pandas as pd
 import streamlit as st
 
 import api_client as api
+import ui
 
-st.set_page_config(page_title="Staff inbox - SchoolConnect", page_icon="📥", layout="wide")
 
-URGENCY_ICON = {"low": "🟢", "medium": "🟡", "high": "🟠", "critical": "🔴"}
 
-st.title("📥 Staff inbox")
+ui.page("Staff inbox", "Every parent message, most urgent first. Open a ticket to read it, "
+        "correct the AI and approve a reply.", "📥")
 
 try:
     tax = api.taxonomy()
@@ -64,7 +64,7 @@ if open_critical:
 
 table = pd.DataFrame([{
     "Reference": t["reference"],
-    "Urgency": f"{URGENCY_ICON[t['urgency']]} {t['urgency']}",
+    "Urgency": t["urgency"].title(),
     "Category": categories[t["category"]],
     "Routed to": roles.get(t["routed_role"], t["routed_role"]),
     "Language": languages.get(t["language"], t["language"]),
@@ -73,7 +73,7 @@ table = pd.DataFrame([{
     "Message": t["message"][:90],
 } for t in tickets])
 st.caption(f"{len(tickets)} ticket(s)")
-st.dataframe(table, hide_index=True, width="stretch")
+st.dataframe(ui.style_urgency(table), hide_index=True, width="stretch")
 
 # ---- Ticket detail -------------------------------------------------------
 st.divider()
@@ -83,8 +83,8 @@ t = by_ref[ref]
 
 left, right = st.columns([2, 1])
 with left:
-    st.subheader(f"{URGENCY_ICON[t['urgency']]} {t['reference']}")
-    st.write(t["message"])
+    st.markdown(f"### {t['reference']} &nbsp; {ui.urgency_pill(t['urgency'])}", unsafe_allow_html=True)
+    st.container(border=True).write(t["message"])
     st.caption(
         f"From: {t['parent_name'] or 'not given'} · Contact: {t['parent_contact'] or 'not given'} · "
         f"Grade: {t['learner_grade'] or '-'} · Channel: {t['channel']}"
