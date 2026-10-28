@@ -109,8 +109,9 @@ python scripts/evaluate_classifier.py  # writes docs/classifier_evaluation.md
 # Week 5 forecasting demo (replaces the 150 demo tickets with ~24 months of history):
 python scripts/generate_history.py --reset
 python scripts/evaluate_forecast.py    # writes docs/forecast_evaluation.md
-python scripts/demo_week6.py           # Week 6: live tickets, corrections and replies for the demo
+python scripts/demo_week6.py --password "pick-a-demo-password"   # Week 6: live tickets, corrections, replies
 python scripts/demo_week7.py --password "pick-a-demo-password"   # Week 7: demo staff + full workflow
+#   (both demos create the same demo staff accounts; use the same password for both)
 python scripts/create_staff.py --name "Mrs Pillay" --email pillay@school.example --role finance_clerk
 
 uvicorn app.main:app --reload          # API on http://localhost:8000 (docs at /docs)

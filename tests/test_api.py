@@ -86,6 +86,7 @@ def test_by_reference_is_public_and_hides_personal_data(client):
     data = client.get(f"/tickets/by-reference/{ref.lower()}").json()  # case-insensitive
     assert data["reference"] == ref
     assert "message" not in data and "parent_name" not in data and "parent_contact" not in data
+    assert "category" not in data and "urgency" not in data   # references are guessable
     assert client.get("/tickets/by-reference/SC-00000000-0000").status_code == 404
 
 
@@ -119,3 +120,11 @@ def test_api_key_protects_writes_and_personal_data(client, set_env):
     assert client.get("/health").status_code == 200
     assert client.get("/stats").status_code == 200
     assert client.post("/classify", json={"message": "hi"}).status_code == 200
+
+
+def test_guessed_reference_does_not_reveal_a_welfare_concern(client):
+    """References are sequential, so a stranger can guess one. They must learn nothing sensitive."""
+    ref = create(client, message="My son is being bullied and is scared to go to school")["reference"]
+    data = client.get(f"/tickets/by-reference/{ref}").json()
+    assert set(data) == {"reference", "status", "created_at", "updated_at", "reply_status"}
+    assert "welfare" not in str(data) and "high" not in str(data) and "critical" not in str(data)

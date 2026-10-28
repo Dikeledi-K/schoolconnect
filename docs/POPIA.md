@@ -88,7 +88,7 @@ enforces this on every request; the Streamlit pages only hide what the API would
 
 | Who | Can see / do |
 |---|---|
-| Anyone with a reference number | Status, category, urgency, dates and whether a reply was sent. No message, no personal data |
+| Anyone with a reference number | Status, dates and whether a reply was sent. No message, no personal data, and no category or urgency (references are sequential and guessable, and "a learner welfare ticket today" is sensitive) |
 | Principal | Every ticket; forecast and risk pages; final fee exemption decisions |
 | Deputy principal | Tickets routed to or assigned to them, and **every learner-welfare / safety ticket**; forecast and risk pages |
 | Finance clerk, admin clerk, class teacher, IT support | Tickets routed to their role or assigned to them. **Never** learner-welfare / safety tickets. Finance clerk: fee exemption review steps |

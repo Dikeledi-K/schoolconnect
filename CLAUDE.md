@@ -84,6 +84,7 @@ python scripts/seed_db.py
 python scripts/evaluate_classifier.py
 python scripts/generate_history.py --reset   # Week 5: ~24 months of synthetic history
 python scripts/evaluate_forecast.py          # Week 5: writes docs/forecast_evaluation.md
-python scripts/demo_week6.py                 # Week 6: live demo tickets, corrections, replies
+python scripts/demo_week6.py --password "..."  # Week 6: live demo tickets, corrections, replies
+python scripts/demo_week7.py --password "..."  # Week 7: demo staff, workflow, fee exemption, escalation
 streamlit run frontend/Home.py
 ```

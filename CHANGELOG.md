@@ -2,6 +2,25 @@
 
 All notable changes, one section per bootcamp week.
 
+## [week-7.1] 2026-10-28: Audit fixes (Weeks 1–7 review)
+
+### Fixed
+- `scripts/demo_week6.py` crashed since Week 7 (staff endpoints need a login). It now creates
+  the same demo staff accounts as Week 7 and logs in as the right person for each step;
+  needs `--password` or `DEMO_STAFF_PASSWORD`.
+- Privacy: the public status lookup (`GET /tickets/by-reference/{ref}`) no longer returns the
+  category or urgency. References are sequential and guessable, so a stranger could learn that
+  a learner-welfare ticket was opened today.
+- Replaced the deprecated Streamlit `use_container_width` on the logout and hand-over buttons.
+
+### Added
+- `tests/test_demo_scripts.py`: runs both demo scripts end to end so they cannot break silently.
+- Test that a guessed reference reveals nothing sensitive.
+
+### Docs
+- Week 2 roadmap items ticked (delivered in Week 6). Demo instructions updated for `--password`
+  and the staff login. POPIA access table updated.
+
 ## [week-7] 2026-10-28: Workflow Automation & System Integration
 
 ### Added

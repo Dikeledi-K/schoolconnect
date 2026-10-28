@@ -111,13 +111,17 @@ class TicketCreated(BaseModel):
 
 
 class TicketPublic(BaseModel):
-    """What anyone with a reference number may see: no message text, no personal data."""
+    """What anyone with a reference number may see: progress only.
+
+    No message text, no personal data, and no category or urgency either: references count up
+    each day (SC-YYYYMMDD-0001, -0002, ...), so anyone could guess them, and "a new learner
+    welfare ticket today" is sensitive in a small school community (POPIA). The parent already
+    knows what they wrote; they only need to know whether the school is dealing with it.
+    """
 
     model_config = ConfigDict(from_attributes=True)
 
     reference: str
-    category: str
-    urgency: str
     status: str
     created_at: datetime
     updated_at: datetime

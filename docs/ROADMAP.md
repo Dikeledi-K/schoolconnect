@@ -25,20 +25,20 @@ One platform, built progressively. Tick each box only when it is built, tested a
 - [x] Streamlit: "Send a message" (reference, category, urgency; critical shows 10111 / 112 notice), "Staff inbox" (filters, status change), "Overview"
 - [x] CI green; tests for taxonomy, classifier, guardrails, API
 
-## Week 2 — Automated Response Generation *(skipped; optional backlog)*
+## Week 2 — Automated Response Generation *(skipped in the schedule; built in Week 6)*
 **Outcome:** the system classifies AND responds.
 
-- [ ] `config/school_info.yaml` — the ONLY source of facts (details, hours, term dates, exemption docs, admissions steps, contacts)
-- [ ] Response templates per category
-- [ ] LLM generation grounded only in templates + school_info, in the parent's language
-- [ ] Tone control: formal, friendly, urgent
-- [ ] Template-only fallback without an LLM
-- [ ] Responses table (draft, approved, sent; edited_by)
-- [ ] Staff review / edit / approve before sending
-- [ ] Welfare replies: acknowledgement only + human follow-up
-- [ ] Endpoints: generate, edit, approve response
-- [ ] UI: suggested-reply panel in staff inbox; instant acknowledgement on parent page
-- [ ] Tests: no invented facts (dates/amounts must appear in school_info), tone differences, language matching, fallback
+- [x] `config/school_info.yaml` — the ONLY source of facts (details, hours, exemption docs, admissions steps, contacts); term dates live in `config/school_calendar.yaml`
+- [x] Response templates per category
+- [x] LLM generation grounded only in templates + school_info, in the parent's language (optional; needs an API key)
+- [x] Tone control: formal, friendly, urgent
+- [x] Template-only fallback without an LLM
+- [x] Responses table (draft, approved; edited flag, approved_by); "sent" is tracked in the Week 7 outbox
+- [x] Staff review / edit / approve before sending
+- [x] Welfare replies: acknowledgement only + human follow-up
+- [x] Endpoints: generate, edit, approve response
+- [x] UI: suggested-reply panel in staff inbox; instant acknowledgement (reference number) on parent page
+- [x] Tests: no invented facts (grounding check), tone differences, language notes, fallback
 
 ## Week 3 — Data Tracking & Analytics Dashboard *(skipped; history charts now in Week 5)*
 **Outcome:** measurable business insights.

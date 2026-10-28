@@ -54,7 +54,7 @@ def sidebar() -> None:
         return
     with st.sidebar:
         st.markdown(f"**👋 {staff['name']}**  \n{ROLE_NAMES.get(staff['role'], staff['role'])}")
-        if st.button("Log out", key="logout", use_container_width=True):
+        if st.button("Log out", key="logout", width="stretch"):
             api.logout()
             st.rerun()
 

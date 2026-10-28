@@ -70,7 +70,7 @@ for t in tickets:
                 run(lambda t=t: api.update_status(t["id"], "in_progress"), f"{t['reference']} started")
         if b2.button("✔ Resolve", key=f"resolve_{t['id']}"):
             run(lambda t=t: api.update_status(t["id"], "resolved"), f"{t['reference']} resolved")
-        with b3.popover("↪ Hand over", use_container_width=True):
+        with b3.popover("↪ Hand over", width="stretch"):
             if colleagues:
                 pick = st.selectbox("Give it to", colleagues, key=f"to_{t['id']}",
                                     format_func=lambda s: f"{s['name']} ({auth.ROLE_NAMES[s['role']]})")
