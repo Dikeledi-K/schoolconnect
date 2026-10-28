@@ -101,8 +101,10 @@ def test_reassign_is_logged_and_gives_access(client, login_as):
     r = client.post(f"/tickets/{t['id']}/assign", json={"staff_id": clerk.id, "reason": "admin query"})
     assert r.status_code == 200 and r.json()["assigned_to"] == clerk.id
     assert client.get(f"/tickets/{t['id']}", headers=clerk_headers).status_code == 200   # now theirs
-    event = client.get(f"/tickets/{t['id']}/events").json()[-1]
-    assert event["type"] == "reassigned" and "Mr Khumalo" in event["to_value"] and event["actor"] == "Ms Dlamini"
+    evs = client.get(f"/tickets/{t['id']}/events").json()
+    event = [e for e in evs if e["type"] == "reassigned"][-1]
+    assert "Mr Khumalo" in event["to_value"] and event["actor"] == "Ms Dlamini"
+    assert evs[-1]["type"] == "notified" and evs[-1]["from_value"] == "staff_assigned"   # new owner told
     assert client.post(f"/tickets/{t['id']}/assign", json={"staff_id": clerk.id}).status_code == 409   # already
 
 

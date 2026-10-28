@@ -119,6 +119,8 @@ class TicketPublic(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    # Week 7: has the school replied? none | sent | replied_not_emailed (approved, but no email address)
+    reply_status: str = "none"
 
 
 class TicketStatusUpdate(BaseModel):
@@ -161,6 +163,9 @@ class ResponseOut(BaseModel):
     created_at: datetime
     approved_at: datetime | None
     approved_by: str | None
+    # Week 7: what happened when the approved reply was sent to the parent:
+    # sent | dry_run | failed | not_supported (phone number) | no_contact | None (still a draft)
+    delivery_status: str | None = None
 
 
 # Week 7: the staff member is now the LOGGED-IN user. The old typed-in name fields are still
@@ -254,3 +259,18 @@ class TicketEventOut(BaseModel):
 class AssignRequest(BaseModel):
     staff_id: int
     reason: str | None = Field(default=None, max_length=300)
+
+
+class OutboxOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    recipient: str
+    channel: str
+    kind: str
+    subject: str
+    ticket_id: int | None
+    status: str
+    error: str | None
+    created_at: datetime
+    sent_at: datetime | None

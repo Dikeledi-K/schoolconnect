@@ -11,7 +11,8 @@ from app.auth.access import can_see_ticket
 from app.auth.deps import current_staff
 from app.db import get_db
 from app.models import Staff
-from app.schemas import AssignRequest, StaffOut, TicketEventOut, TicketOut
+from app.notify import outbox
+from app.schemas import AssignRequest, OutboxOut, StaffOut, TicketEventOut, TicketOut
 from app.workflow import assignment, events
 
 router = APIRouter(tags=["workflow"])
@@ -50,3 +51,10 @@ def assign_ticket(ticket_id: int, body: AssignRequest, db: Session = Depends(get
         return assignment.reassign(db, ticket, target, staff, body.reason)
     except assignment.AssignmentError as err:
         raise HTTPException(status_code=409, detail=str(err))
+
+
+@router.get("/tickets/{ticket_id}/outbox", response_model=list[OutboxOut])
+def ticket_outbox(ticket_id: int, db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
+    """Notifications for this ticket and whether they were sent (dry run, sent, failed, not supported)."""
+    visible_ticket(db, ticket_id, staff)
+    return outbox.for_ticket(db, ticket_id)

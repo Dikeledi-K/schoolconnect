@@ -159,3 +159,25 @@ class TicketEvent(Base):
     to_value: Mapped[str | None] = mapped_column(String(200), nullable=True)
     actor: Mapped[str | None] = mapped_column(String(120), nullable=True)   # staff name, or "system"
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class Outbox(Base):
+    """Week 7: every notification, whether or not it was really sent.
+
+    status: dry_run (NOTIFY_MODE=dry_run, nothing sent) | sent | failed | not_supported (phone number)
+    """
+
+    __tablename__ = "outbox"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    recipient: Mapped[str] = mapped_column(String(200))
+    channel: Mapped[str] = mapped_column(String(20))            # email | phone | unknown
+    kind: Mapped[str] = mapped_column(String(30), index=True)   # e.g. parent_reply, staff_assigned
+    subject: Mapped[str] = mapped_column(String(200))
+    body: Mapped[str] = mapped_column(Text)
+    ticket_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    response_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    error: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

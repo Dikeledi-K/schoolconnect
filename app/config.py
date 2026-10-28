@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     # changing it later does not break existing passwords.
     password_hash_iterations: int = 600_000
 
+    # Week 7: notifications. "dry_run" (default) only writes to the outbox table;
+    # "smtp" really sends email. SMS / WhatsApp are not supported yet.
+    notify_mode: str = "dry_run"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+
     # Comma-separated allowed origins for CORS.
     cors_origins: str = "http://localhost:8501"
 

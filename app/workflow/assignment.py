@@ -21,6 +21,14 @@ def staff_label(staff: Staff | None) -> str | None:
     return f"{staff.name} (#{staff.id})" if staff else None
 
 
+def notify_assignee(db: Session, ticket: Ticket, staff: Staff, reason: str = "assigned") -> None:
+    """Email the new owner (reference, category, urgency only - see notify/messages.py)."""
+    from app.notify import messages, outbox
+
+    outbox.notify_staff(db, staff, *messages.staff_alert(ticket, reason), kind=f"staff_{reason}",
+                        ticket_id=ticket.id)
+
+
 def reassign(db: Session, ticket: Ticket, target: Staff, actor: Staff, reason: str | None = None,
              now: datetime | None = None) -> Ticket:
     """A person moves a ticket to someone else. Child safety: welfare tickets stay with senior staff."""
@@ -36,6 +44,7 @@ def reassign(db: Session, ticket: Ticket, target: Staff, actor: Staff, reason: s
     ticket.updated_at = now
     note = staff_label(target) + (f": {reason}" if reason else "")
     events.log(db, ticket.id, "reassigned", staff_label(previous), note[:200], actor.name, at=now)
+    notify_assignee(db, ticket, target)
     db.commit()
     db.refresh(ticket)
     return ticket

@@ -136,10 +136,19 @@ def stats(db: Session = Depends(get_db)):
 @app.get("/tickets/by-reference/{reference}", response_model=TicketPublic)
 def ticket_by_reference(reference: str, db: Session = Depends(get_db)):
     """Parents check progress with their reference. Returns no personal data."""
+    from app.notify.outbox import for_ticket
+
     ticket = crud.get_ticket_by_reference(db, reference)
     if ticket is None:
         raise HTTPException(status_code=404, detail="No ticket with that reference")
-    return ticket
+    out = TicketPublic.model_validate(ticket)
+    # Week 7: has the school replied? (Status words only: no reply text, no personal data.)
+    replies = [r for r in for_ticket(db, ticket.id) if r.kind == "parent_reply"]
+    if any(r.status == "sent" for r in replies):
+        out.reply_status = "sent"
+    elif any(r.status == "approved" for r in crud.list_responses(db, ticket.id)):
+        out.reply_status = "replied_not_emailed"
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -395,8 +404,14 @@ def draft_response(ticket_id: int, body: ResponseCreate, db: Session = Depends(g
 @app.get("/tickets/{ticket_id}/responses", response_model=list[ResponseOut], tags=["replies"],
          dependencies=[Depends(require_api_key)])
 def list_responses(ticket_id: int, db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
-    _ticket_or_404(db, ticket_id, staff)
-    return crud.list_responses(db, ticket_id)
+    from app.notify.outbox import delivery_status
+
+    ticket = _ticket_or_404(db, ticket_id, staff)
+    responses = crud.list_responses(db, ticket_id)
+    for r in responses:
+        if r.status == "approved":
+            r.delivery_status = delivery_status(db, r.id) or ("no_contact" if not ticket.parent_contact else None)
+    return responses
 
 
 @app.patch("/responses/{response_id}", response_model=ResponseOut, tags=["replies"],

@@ -125,6 +125,10 @@ def update_status(db: Session, ticket: Ticket, status: str, actor: str | None = 
         events.log(db, ticket.id, "status_changed", old, status, actor, at=now)
     if status == "in_progress":
         events.mark_first_response(db, ticket, actor, now)
+    if status == "resolved" and old != "resolved":
+        from app.notify import messages, outbox
+
+        outbox.notify_parent(db, ticket, *messages.parent_resolved(ticket), kind="parent_resolved")
     db.commit()
     db.refresh(ticket)
     return ticket
@@ -266,7 +270,13 @@ def approve_response(db: Session, response, approved_by: str):
     response.status, response.approved_by, response.approved_at = "approved", approved_by, utcnow()
     ticket = db.get(Ticket, response.ticket_id)
     if ticket is not None:
+        from app.notify import messages, outbox
+
         events.mark_first_response(db, ticket, approved_by, response.approved_at)
+        # Week 7: approving now really sends the reply (through the outbox).
+        row = outbox.notify_parent(db, ticket, *messages.parent_reply(ticket, response.body),
+                                   kind="parent_reply", response_id=response.id)
+        response.delivery_status = row.status if row else "no_contact"
     audit.record(db, "response_approval", "staff", ticket_id=response.ticket_id, actor=approved_by,
                  human_override=response.edited,
                  output={"response_id": response.id, "edited": response.edited, "method": response.method},
@@ -296,6 +306,13 @@ def anonymise_ticket(db: Session, ticket: Ticket, commit: bool = True) -> dict:
     for response in db.scalars(select(Response).where(Response.ticket_id == ticket.id)):
         response.body = mask_pii(response.body, names).text
         response.original_body = mask_pii(response.original_body, names).text
+    # Week 7: notifications sent to the parent hold their contact details too.
+    from app.models import Outbox
+
+    for row in db.scalars(select(Outbox).where(Outbox.ticket_id == ticket.id)):
+        if row.kind.startswith("parent_"):
+            row.recipient = "[REMOVED]"
+        row.body = mask_pii(row.body, names).text
     if commit:
         db.commit()
     return removed
