@@ -15,8 +15,6 @@ in the backtest (see evaluate.py).
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingRegressor
-from threadpoolctl import threadpool_limits   # installed with scikit-learn
 
 from app.forecasting.calendar import FLAG_COLUMNS
 
@@ -109,6 +107,11 @@ def _ml_frame(series: pd.Series, dates, cal: pd.DataFrame) -> pd.DataFrame:
 
 
 def ml_calendar(history: pd.Series, future_dates, cal: pd.DataFrame, seed: int = 0) -> np.ndarray:
+    # Week 8: imported here, not at the top, so the API starts ~2 s faster (scikit-learn pulls in
+    # scipy). Only computing a forecast needs it; reading a stored forecast does not.
+    from sklearn.ensemble import HistGradientBoostingRegressor
+    from threadpoolctl import threadpool_limits   # installed with scikit-learn
+
     if len(history) < 90 or history.sum() == 0:
         return moving_average(history, future_dates, cal)
     # -1 means "no value last year" (before our history started).

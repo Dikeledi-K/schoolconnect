@@ -17,8 +17,8 @@ Forecast start (as of): **2026-10-28**. Backtest window: 2026-09-02 to 2026-10-2
 
 | Measure | Value |
 |---|---|
-| Overall error of SchoolConnect forecast (WAPE) | **21.6%** |
-| Simple 'same as last week' rule (WAPE) | 33.0% |
+| Overall error of SchoolConnect forecast (WAPE) | **21.7%** |
+| Simple 'same as last week' rule (WAPE) | 32.8% |
 | Improvement over the simple rule | 34% |
 | Average error per day (MAE, all messages) | ±3.4 messages |
 | 80% range for the daily total | 0.65× to 1.62× the forecast |
@@ -27,7 +27,7 @@ WAPE per category and method (lower is better; **bold** = method chosen):
 
 | Category | Same as last week | Same day last year | Recent average | Machine learning |
 |---|---|---|---|---|
-| academic | 84% | 57% | 56% | **39%** |
+| academic | 83% | 58% | 55% | **39%** |
 | admissions | 77% | 72% | 104% | **54%** |
 | fees_exemptions | 58% | 68% | 61% | **46%** |
 | it_portal | 64% | 79% | **52%** | 61% |

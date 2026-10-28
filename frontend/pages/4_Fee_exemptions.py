@@ -38,7 +38,8 @@ if not requests_:
 
 def run(action, success: str) -> None:
     try:
-        action()
+        with st.spinner("Working on it..."):   # the free server can take a few seconds
+            action()
     except api.ApiError as err:
         st.error(str(err))
     else:

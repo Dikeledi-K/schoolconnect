@@ -56,8 +56,13 @@ def daily_workload(forecast: pd.DataFrame, cal: pd.DataFrame, staff_override: di
     carry_upper = {r: 0.0 for r in STAFF_ROLES}
     carry_tickets = {r: 0.0 for r in STAFF_ROLES}
 
+    # Week 8 speed-up: read the table ONCE into a plain dict. Looking values up in the pandas
+    # table (per_day[col][role][d]) took ~1 s per request, ~10 s on Render's 0.1 CPU.
+    lookup = {(col, role, d): value
+              for (col, role), series in per_day.items() for d, value in series.items()}
+
     def get(col, role, d):
-        return per_day[col][role][d] if role in per_day[col].columns else 0.0
+        return lookup.get((col, role, d), 0.0)
 
     for d in dates:
         flags = cal.loc[d]

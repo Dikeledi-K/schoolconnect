@@ -4,4 +4,5 @@
 -r frontend/requirements.txt
 
 pytest>=8.0
+psutil>=5.9            # scripts/measure_performance.py (memory measurements)
 playwright>=1.45       # scripts/take_screenshots.py (after: python -m playwright install chromium)

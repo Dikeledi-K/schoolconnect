@@ -21,8 +21,9 @@ from datetime import timedelta
 import pandas as pd
 from sqlalchemy.orm import Session
 
+from importlib.metadata import version
+
 import numpy as np
-import sklearn
 from sqlalchemy import delete, select
 
 from app import crud
@@ -90,7 +91,7 @@ def fingerprint(history: pd.DataFrame) -> str:
 
 def library_versions() -> str:
     return (f"py{platform.python_version_tuple()[0]}.{platform.python_version_tuple()[1]}"
-            f"-pandas{pd.__version__}-numpy{np.__version__}-sklearn{sklearn.__version__}")
+            f"-pandas{pd.__version__}-numpy{np.__version__}-sklearn{version('scikit-learn')}")
 
 
 def _signing_key() -> bytes | None:

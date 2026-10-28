@@ -13,7 +13,9 @@ Small groups are reported but never flagged (too few cases to judge fairly).
 
 from __future__ import annotations
 
+import copy
 import csv
+from functools import lru_cache
 from pathlib import Path
 from statistics import median
 
@@ -52,7 +54,17 @@ def _language_name(code: str) -> str:
 
 
 def classifier_fairness(path: Path = SAMPLE_FILE) -> dict:
-    """Accuracy of the RULES classifier per language and grade band on the labelled sample."""
+    """Accuracy of the RULES classifier per language and grade band on the labelled sample.
+
+    Week 8: the answer depends only on the sample file and the rules, so it is worked out once
+    per process (it took ~0.3 s of every Risk page load, ~3 s on Render's 0.1 CPU).
+    A copy is returned so nobody can change the cached result.
+    """
+    return copy.deepcopy(_classifier_fairness(Path(path)))
+
+
+@lru_cache(maxsize=4)
+def _classifier_fairness(path: Path) -> dict:
     from app.classifier import classify_message
 
     rules_only = Settings(llm_provider="rules", anthropic_api_key="", gemini_api_key="")

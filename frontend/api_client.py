@@ -185,7 +185,7 @@ def my_work() -> list[dict]:
 
 
 def staff_list() -> list[dict]:
-    return _request("GET", "/staff")
+    return _cached_get("/staff", current_token())
 
 
 def assign(ticket_id: int, staff_id: int, reason: str | None = None) -> dict:
@@ -279,8 +279,15 @@ def anonymise(ticket_id: int) -> dict:
     return _request("POST", f"/privacy/tickets/{ticket_id}/anonymise")
 
 
+@st.cache_data(ttl=120, show_spinner=False)
+def _cached_get(path: str, token: str | None, params: tuple = ()):
+    """Week 8: remember slow read-only answers for 2 minutes. The login token is part of the
+    cache key, so one staff member's answers are never shown to another."""
+    return _request("GET", path, params=dict(params))
+
+
 def risk_summary(days: int = 30) -> dict:
-    return _request("GET", "/risk/summary", params={"days": days})
+    return _cached_get("/risk/summary", current_token(), (("days", days),))
 
 
 def risk_report_pdf(days: int = 30) -> bytes:

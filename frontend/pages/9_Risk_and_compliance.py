@@ -14,7 +14,8 @@ me = auth.require_login(roles=auth.SENIOR_ROLES)
 days = st.select_slider("Period", options=[7, 30, 90, 365], value=30, format_func=lambda d: f"Last {d} days")
 
 try:
-    s = api.risk_summary(days)
+    with st.spinner("Collecting the AI risk figures..."):
+        s = api.risk_summary(days)
 except api.ApiError as err:
     st.error(str(err))
     st.stop()
@@ -39,10 +40,17 @@ if inc["critical_still_new_after_1h"]:
 for flag in fair["flags"]:
     st.warning(f"⚖️ Fairness gap: {flag}")
 
+# Week 8: the PDF is built only when asked for (it took ~7 s of every page load on Render's free CPU).
+pdf_key = f"risk_pdf_{days}"
 try:
-    pdf = api.risk_report_pdf(days)
-    st.download_button("⬇️ Download the risk evaluation report (PDF)", pdf,
-                       file_name="schoolconnect-risk-report.pdf", mime="application/pdf", type="primary")
+    if pdf_key not in st.session_state:
+        if st.button("📄 Prepare the risk evaluation report (PDF)"):
+            with st.spinner("Building the PDF..."):
+                st.session_state[pdf_key] = api.risk_report_pdf(days)
+            st.rerun()
+    else:
+        st.download_button("⬇️ Download the risk evaluation report (PDF)", st.session_state[pdf_key],
+                           file_name="schoolconnect-risk-report.pdf", mime="application/pdf", type="primary")
 except api.ApiError as err:
     st.error(str(err))
 

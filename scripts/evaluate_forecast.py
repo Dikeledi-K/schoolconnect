@@ -98,7 +98,7 @@ def main():
                "simple average and always handled by a person.\n- All data is synthetic and the calendar "
                "is approximate (see docs/DATA.md).\n")
     path = ROOT / "docs" / "forecast_evaluation.md"
-    path.write_text("\n".join(out))
+    path.write_text("\n".join(out), encoding="utf-8")   # Week 8: the same file on Windows and Linux
     print("\n".join(out))
     print(f"Written to {path}")
 

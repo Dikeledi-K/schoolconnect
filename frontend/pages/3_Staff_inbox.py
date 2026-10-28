@@ -88,7 +88,8 @@ t = by_ref[ref]
 
 def run(action, success: str) -> None:
     try:
-        action()
+        with st.spinner("Working on it..."):   # the free server can take a few seconds
+            action()
     except api.ApiError as err:
         st.error(str(err))
     else:
@@ -112,12 +113,14 @@ with left:
     label = "✅ Checked by staff" if t["method"] == "staff" else "🤖 AI-suggested"
     st.info(f"**{label}** · method: {source} · confidence: {t['confidence']:.0%}"
             + (" · **low confidence: please check**" if t["confidence"] < 0.35 and t["method"] != "staff" else ""))
+    # One call for the audit trail, used here and in the "Audit trail" section below.
+    try:
+        history = api.ticket_audit(t["id"])
+        history_error = None
+    except api.ApiError as err:
+        history, history_error = [], str(err)
     with st.expander("Why was it classified this way?"):
         st.write(t["reason"])
-        try:
-            history = api.ticket_audit(t["id"])
-        except api.ApiError:
-            history = []
         fired = sorted({g for row in history for g in row["guardrails"]})
         if fired:
             st.write("**Safety guardrails applied:** " + ", ".join(fired))
@@ -246,11 +249,9 @@ with st.expander("🕑 Timeline (assignments, status, escalations, notifications
 
 # ---- Week 6: audit trail and privacy -------------------------------------
 with st.expander("🧾 Audit trail for this ticket"):
-    try:
-        rows = api.ticket_audit(t["id"])
-    except api.ApiError as err:
-        st.error(str(err))
-        rows = []
+    rows = history
+    if history_error:
+        st.error(history_error)
     if rows:
         st.dataframe(pd.DataFrame([{
             "When (UTC)": r["created_at"][:16].replace("T", " "),

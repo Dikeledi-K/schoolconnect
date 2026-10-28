@@ -43,7 +43,8 @@ if not tickets:
 def run(action, success: str) -> None:
     """Call the API, show a friendly result, refresh the page."""
     try:
-        action()
+        with st.spinner("Working on it..."):   # the free server can take a few seconds
+            action()
     except api.ApiError as err:
         st.error(str(err))
     else:
