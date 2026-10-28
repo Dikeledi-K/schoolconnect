@@ -38,8 +38,8 @@ from app.forecasting import service as fc
 from app.forecasting.data import daily_counts
 from app.forecasting.forecast import MAX_HORIZON
 from app import audit
-from app.llm_text import llm_available, model_name
-from app.privacy.pii import install_log_redaction, mask_pii
+
+from app.privacy.pii import install_log_redaction
 from app.privacy.retention import run_retention
 from app.responses.generator import generate_draft
 from app.responses.templates import load_school_info
@@ -58,6 +58,7 @@ from app.schemas import (
 from app.taxonomy import CATEGORIES, SENIOR_ROLES, STAFF_ROLES, taxonomy_as_dict
 from app.api import auth as auth_api
 from app.api import workflow as workflow_api
+from app.workflow.intake import intake_ticket
 from app.auth.access import can_see_ticket, visible_tickets_filter
 from app.auth.deps import current_staff, require_roles
 from app.models import Staff
@@ -176,24 +177,8 @@ def _ticket_or_404(db: Session, ticket_id: int, staff: Staff):
     dependencies=[Depends(require_api_key)],
 )
 def create_ticket(body: TicketCreate, db: Session = Depends(get_db)) -> TicketCreated:
-    # Only the message text goes to the classifier, never name/contact. Week 6: the text is also
-    # masked (IDs, phones, emails, the parent's own name) before any AI sees it.
-    names = [body.parent_name] if body.parent_name else None
-    settings = get_settings()
-    result = classify_message(body.message, names=names)
-    ticket = crud.create_ticket(db, body, result)
-    masked = mask_pii(body.message, names)
-    ai_configured = llm_available(settings)
-    audit.record(
-        db, "classification", result.method, ticket_id=ticket.id,
-        model=model_name(settings) if result.method != "rules" else None,
-        llm_used=result.method != "rules",
-        fallback_reason="AI failed or gave invalid output" if ai_configured and result.method == "rules" else None,
-        masked_input=masked.text, pii_found=masked.counts, guardrails=result.guardrails_applied,
-        output={"category": result.category, "urgency": result.urgency, "language": result.language,
-                "confidence": result.confidence, "needs_human": result.needs_human,
-                "safety_flag": result.safety_flag},
-    )
+    """A parent's message: classify, mask, audit, auto-assign, notify (app/workflow/intake.py)."""
+    ticket = intake_ticket(db, body)
     return TicketCreated(
         id=ticket.id,
         reference=ticket.reference,
