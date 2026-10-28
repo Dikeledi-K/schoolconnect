@@ -308,3 +308,26 @@ class ChecklistUpdate(BaseModel):
 class FeeDecision(BaseModel):
     decision: Literal["approve", "decline"]
     reason: str | None = Field(default=None, max_length=500)
+
+
+# --------------------------------------------------------------------------
+# Week 7: inbound integrations
+# --------------------------------------------------------------------------
+class InboundMessage(BaseModel):
+    """What an email forwarder or WhatsApp gateway sends."""
+
+    channel: Literal["email", "whatsapp"]
+    message: str = Field(min_length=1, max_length=4000)
+    sender_name: str | None = Field(default=None, max_length=120)
+    sender_contact: str | None = Field(default=None, max_length=120)
+    learner_grade: str | None = None
+
+
+class InboundResult(BaseModel):
+    """Echoes no personal data back to the gateway."""
+
+    reference: str
+    channel: str
+    category: str
+    urgency: str
+    assigned: bool

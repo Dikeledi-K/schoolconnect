@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = ""
 
+    # Week 7: shared secret for signed inbound webhooks (email forwarder / WhatsApp gateway).
+    # Empty = POST /integrations/inbound-message is disabled.
+    inbound_secret: str = ""
+
     # Comma-separated allowed origins for CORS.
     cors_origins: str = "http://localhost:8501"
 
