@@ -1,21 +1,19 @@
-# Backend requirements (kept small so the API fits Vercel's function size limit).
-# Frontend has its own frontend/requirements.txt.
+# Backend RUNTIME requirements: what the API needs on Render (kept small for the 512 MB free
+# instance). Tests and dev tools: requirements-dev.txt. Frontend: frontend/requirements.txt.
 fastapi>=0.115,<1.0
 uvicorn>=0.30
 sqlalchemy>=2.0,<3.0
+psycopg[binary]>=3.2,<4.0   # Week 8: Supabase Postgres driver (psycopg 3, prebuilt wheels)
 pydantic>=2.7,<3.0
 pydantic-settings>=2.3
 httpx>=0.27            # Gemini REST calls + FastAPI TestClient
 anthropic>=2.1,<3.0    # official Claude SDK (only used when LLM_PROVIDER=anthropic)
 
-# Week 5 forecasting (small, Vercel-friendly; no Prophet/statsmodels)
+# Week 5 forecasting (small libraries; no Prophet/statsmodels)
 pandas>=2.2
 numpy>=1.26
 scikit-learn>=1.4
 pyyaml>=6.0
 
-# Week 6 risk report PDF
+# Week 6 risk report PDF, Weeks 3-4 weekly report PDFs
 reportlab>=4.0
-
-# Testing
-pytest>=8.0

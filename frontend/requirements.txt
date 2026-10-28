@@ -1,4 +1,4 @@
-# Frontend only (Streamlit Community Cloud installs this file).
+# Frontend only (the Render web service "schoolconnect-web" installs this file).
 # The frontend talks to the API over HTTP and never imports backend code.
 streamlit>=1.46
 requests>=2.31

@@ -1,5 +1,5 @@
 # Streamlit theme for SchoolConnect ("warm & friendly" design). Read automatically by
-# `streamlit run` from the repo root and by Streamlit Community Cloud. Colours only: no secrets here.
+# `streamlit run` from the repo root (locally and on Render). No secrets here.
 
 [theme]
 base = "light"
@@ -20,3 +20,6 @@ backgroundColor = "#fff1dc"           # light peach sidebar
 secondaryBackgroundColor = "#ffffff"  # sidebar inputs (inbox filters) are white
 textColor = "#3b2a1a"
 borderColor = "#f3dcb8"
+
+[browser]
+gatherUsageStats = false          # do not send usage statistics from the school's server

@@ -1,0 +1,64 @@
+# Render Blueprint: two FREE web services from this repo (docs/DEPLOYMENT.md explains every step).
+# Spec: https://render.com/docs/blueprint-spec
+#
+#   schoolconnect-web  (Streamlit)  --HTTPS + X-API-Key-->  schoolconnect-api  (FastAPI)  -->  Supabase Postgres
+#
+# Python version: .python-version in the repo root (3.11), used by both services and by CI.
+# Secrets use `sync: false`: Render asks for them when the Blueprint is first created and never
+# stores them in this file. Free web services sleep after 15 minutes without traffic.
+
+services:
+  # ---------------------------------------------------------------- API (FastAPI)
+  - type: web
+    name: schoolconnect-api
+    runtime: python
+    plan: free
+    branch: main
+    autoDeployTrigger: commit          # redeploy on every push to main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      # Plain settings (safe to keep in git)
+      - key: ENVIRONMENT
+        value: production              # the app refuses to start without API_KEY and JOBS_TOKEN
+      - key: LLM_PROVIDER
+        value: rules                   # offline classifier; no AI key needed
+      - key: NOTIFY_MODE
+        value: dry_run                 # Render free blocks SMTP ports: notifications stay in the outbox
+      - key: RETENTION_DAYS
+        value: "365"
+      - key: FORECAST_PINNED_DATES
+        value: "2025-12-15"            # demo backtest date, pre-computed by the nightly job
+      # Secrets: typed into the Render dashboard, never into this file
+      - key: DATABASE_URL              # Supabase transaction pooler, port 6543
+        sync: false
+      - key: API_KEY                   # the same value as on schoolconnect-web
+        sync: false
+      - key: JOBS_TOKEN                # the same value as the GitHub secret
+        sync: false
+      - key: INBOUND_SECRET
+        sync: false
+      - key: CORS_ORIGINS              # the web service URL, e.g. https://schoolconnect-web.onrender.com
+        sync: false
+      - key: ANTHROPIC_API_KEY         # optional: only if LLM_PROVIDER is changed to anthropic
+        sync: false
+
+  # ---------------------------------------------------------------- Web (Streamlit)
+  - type: web
+    name: schoolconnect-web
+    runtime: python
+    plan: free
+    branch: main
+    autoDeployTrigger: commit
+    buildCommand: pip install -r frontend/requirements.txt
+    # Run from the repo root so .streamlit/config.toml (the theme) is used.
+    startCommand: streamlit run frontend/Home.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    healthCheckPath: /_stcore/health
+    envVars:
+      # Render can only hand another service's PRIVATE address to a Blueprint, and free services
+      # cannot receive private traffic, so the API's public URL is pasted in once after deploy.
+      - key: API_BASE_URL              # e.g. https://schoolconnect-api.onrender.com
+        sync: false
+      - key: API_KEY                   # the same value as on schoolconnect-api
+        sync: false

@@ -1,0 +1,7 @@
+# Everything a developer (or CI) needs: the backend runtime, the frontend (the api_client tests
+# import it), and the test/dev tools. Render does NOT install this file.
+-r requirements.txt
+-r frontend/requirements.txt
+
+pytest>=8.0
+playwright>=1.45       # scripts/take_screenshots.py (after: python -m playwright install chromium)
