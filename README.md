@@ -135,10 +135,28 @@ render.yaml     Render Blueprint (two free web services)
 
 ## What I learned
 
-_To be written by Dikeledi: three or four honest lessons, for example about designing for child
-safety first, measuring before optimising, and explaining AI decisions to non-technical people._
+- **Design for the worst message first.** The first rule I wrote was that a message about a child
+  in danger can never be marked low priority, whether by a person, by the AI, or by a parent typing
+  "ignore your rules". Everything else was built around that rule.
+- **Measure before you optimise.** On a free server, a live forecast took 2.5 minutes. Profiling
+  showed that 94% of that time was one pandas lookup. Swapping it for a dictionary made the forecast
+  30 to 60 times faster, and I wrote tests to prove the results were identical. Without measuring, I
+  would have guessed wrong.
+- **AI is most useful when it's optional.** Every feature works offline with plain rules, and the AI
+  only rewords or drafts. A person approves every reply, and the AI never sees names, phone numbers
+  or ID numbers. That made the system cheaper and safer, and easier to explain to a principal.
+- **Be honest about what the data proves.** My data is synthetic, so I can show the system works as
+  designed, but not yet that it saves a school time. I learned to say "assumption" out loud and to
+  make a pilot my next step.
 
 ## About me
 
-_To be written by Dikeledi: a short introduction, the bootcamp, what you want to work on next, and
-how to contact you (LinkedIn / email)._
+I'm Dikeledi Kwenaite, a developer in the CAPACITI Johannesburg bootcamp. I built SchoolConnect on
+my own over eight weeks, from the first classifier to a live deployment with forecasting, weekly
+reports and POPIA safeguards.
+
+I want to build practical, responsible AI for South African public services, especially education,
+where a little automation can give overloaded staff their time back.
+
+I'd love to talk about a pilot, a role or a collaboration. Please connect with me on
+**[LinkedIn](https://www.linkedin.com/in/dikeledi-kwenaite)**.

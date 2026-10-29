@@ -84,7 +84,7 @@ Before you start, follow "Before a presentation" in [DEPLOYMENT.md](DEPLOYMENT.m
 ### 9. How it is built
 - FastAPI + Streamlit on Render, Postgres on Supabase, scheduled jobs on GitHub Actions
 - Heavy work (forecasts, reports) runs on GitHub; the live API only reads signed results
-- Measured on a simulated 0.1 CPU: peak memory 250 MB of 512 MB; the stored forecast is ~20× faster
+- Peak memory 250 MB of 512 MB on a simulated 0.1 CPU; live, the January forecast takes 2.4 s from storage vs 88.7 s computed
 
 > **Speaker notes:** For the technical panel members. One sentence on the speed-up: "Profiling
 > showed 94% of the forecast time was a pandas lookup; a dictionary made it 30 to 60 times faster,
