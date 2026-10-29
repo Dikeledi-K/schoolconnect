@@ -80,6 +80,8 @@ In PowerShell, in the project folder, with the virtual environment active:
 $env:DATABASE_URL = (Select-String '^SUPABASE_DATABASE_URL=' .env).Line.Split('=',2)[1]
 # Stored forecasts are signed with the PRODUCTION jobs token, so the live API can trust them.
 $env:JOBS_TOKEN = (Select-String '^PROD_JOBS_TOKEN=' .env).Line.Split('=',2)[1]
+# The demo scripts read the staff password from this variable (never typed on the command line).
+$env:DEMO_STAFF_PASSWORD = (Select-String '^DEMO_STAFF_PASSWORD=' .env).Line.Split('=',2)[1]
 
 python scripts/generate_history.py --reset   # ~24 months of synthetic history (deletes everything first!)
 python scripts/demo_week6.py                 # privacy, corrections, replies (password: DEMO_STAFF_PASSWORD)
@@ -89,10 +91,11 @@ python scripts/evaluate_forecast.py          # also checks the January numbers
 python scripts/refresh_forecasts.py          # store today's + the pinned demo forecast
 
 # Back to SQLite: close this terminal, or
-Remove-Item Env:DATABASE_URL, Env:JOBS_TOKEN
+Remove-Item Env:DATABASE_URL, Env:JOBS_TOKEN, Env:DEMO_STAFF_PASSWORD
 ```
 
-The demo scripts take the staff password from `DEMO_STAFF_PASSWORD` in `.env` (or `--password`).
+The demo scripts take the staff password from the `DEMO_STAFF_PASSWORD` environment variable set above
+(or `--password`).
 They print the demo logins: `principal@ubuntu-demo.school.example`, `deputy@…`, `admin@…`,
 `finance@…`, `teacher@…` and `it@…`.
 
