@@ -40,7 +40,7 @@ services:
         sync: false
       - key: INBOUND_SECRET
         sync: false
-      - key: CORS_ORIGINS              # the web service URL, e.g. https://schoolconnect-web.onrender.com
+      - key: CORS_ORIGINS              # the web service URL, e.g. https://schoolconnect-web-cwa0.onrender.com
         sync: false
       - key: ANTHROPIC_API_KEY         # optional: only if LLM_PROVIDER is changed to anthropic
         sync: false
@@ -60,7 +60,7 @@ services:
     envVars:
       # Render can only hand another service's PRIVATE address to a Blueprint, and free services
       # cannot receive private traffic, so the API's public URL is pasted in once after deploy.
-      - key: API_BASE_URL              # e.g. https://schoolconnect-api.onrender.com
+      - key: API_BASE_URL              # e.g. https://schoolconnect-api-0yhr.onrender.com
         sync: false
       - key: API_KEY                   # the same value as on schoolconnect-api
         sync: false

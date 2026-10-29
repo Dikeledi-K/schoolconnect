@@ -148,13 +148,51 @@ PASS     0.0 s  web home page loads  (home page and /_stcore/health answer 200)
 9/9 checks passed in 3.9 s
 ```
 
-**Live run** (Render + Supabase): *to be added after the deployment steps in
-[DEPLOYMENT.md](../DEPLOYMENT.md) are completed.*
+**Live run** (2026-10-29, Render free web services + Supabase free Postgres, right after a redeploy,
+so the API's memory cache was empty and the January forecast came from the stored, signed GitHub
+result):
+
+```
+Smoke test of https://schoolconnect-api-0yhr.onrender.com and https://schoolconnect-web-cwa0.onrender.com
+
+PASS     0.3 s  API /health (wake-up)  (status ok, AI mode rules (first call includes wake-up))
+PASS     2.8 s  staff login  (logged in as Mrs N. Dlamini (principal))
+PASS     0.9 s  create a ticket with the API key  (SC-20261029-0018 (academic))
+PASS     0.4 s  /workflow/my-work  (1 open ticket(s))
+PASS     0.9 s  /analytics/summary  (118 messages last week (135 the week before))
+PASS     2.4 s  /forecast?as_of=2025-12-15 (January backtest)  (45 days, 507 expected, 2.4 s)
+PASS     0.7 s  download the latest weekly report PDF  (report #20, 5 KB)
+PASS     2.8 s  learner-welfare ticket hidden from a class teacher  (ticket #9926: principal 200, class teacher 404)
+PASS     0.6 s  web home page loads  (home page and /_stcore/health answer 200)
+
+9/9 checks passed in 11.7 s
+```
+
+The first live run (before the GitHub job had stored a Python 3.11 forecast) took **88.7 s** for the
+January forecast: the forecasts stored from the developer laptop (Python 3.13) were correctly
+ignored by the version check. After the GitHub job ran: **2.4 s**.
+
+**Live services**
+- Web: https://schoolconnect-web-cwa0.onrender.com
+- API: https://schoolconnect-api-0yhr.onrender.com (docs at `/docs`)
+
+The default names `schoolconnect-web/api.onrender.com` were already taken by other people's apps, so
+Render added a suffix.
+
+**Scheduled jobs**, each run once by hand on GitHub Actions: forecasts (stored today + 15 Dec 2025 in
+29 s), escalate (one unacknowledged critical demo ticket escalated to the principal, with an alert),
+keep-warm, and retention (dry run). All succeeded.
+
+**Database:** Supabase, West EU (Ireland). It holds 9,931 tickets, 6 staff, 24 reports and 2 stored
+forecasts, 16 MB in total. `migrate()` returned `[]` on Postgres (the manual check).
+
+**Two issues found during deployment:**
+- A database URL pasted with a trailing line break gave `database "postgres\n" does not exist`. All
+  settings are now trimmed.
+- An API key was visible in a dashboard screenshot. It was rotated at once.
 
 ## Known limitations
 
-- **The live site isn't up yet.** The Render and Supabase accounts have to be set up by the owner,
-  so the live smoke test is pending.
 - **The free tier sleeps.** Waking takes about a minute plus about 20 s of start-up at 0.1 CPU.
   Keep-warm covers weekday school hours only.
 - **No real email.** Render's free tier blocks SMTP ports, so notifications stay in the outbox (dry
@@ -165,8 +203,8 @@ PASS     0.0 s  web home page loads  (home page and /_stcore/health answer 200)
 - **GitHub schedules** can run late, and stop after 60 days without a commit.
 - **Assumed impact.** The business-case savings rest on labelled assumptions; only a pilot can
   measure them.
-- **Not yet tested on Postgres here.** `migrate()` was tested on SQLite only (no Docker on the dev
-  machine). The manual Postgres check is the first demo load into Supabase (DEPLOYMENT.md §4).
+- **Postgres in CI.** `migrate()` is tested automatically on SQLite only (no Docker on the dev
+  machine). On Postgres it was checked by hand during the Supabase load, and returned `[]`.
 
 ## Retrospective questions
 

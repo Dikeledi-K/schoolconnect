@@ -1,8 +1,8 @@
 """Week 8: check the LIVE deployment end to end and print PASS/FAIL with timings.
 
 Usage:
-    python scripts/smoke_test_prod.py --api https://schoolconnect-api.onrender.com \\
-        --web https://schoolconnect-web.onrender.com --email principal@ubuntu-demo.school.example
+    python scripts/smoke_test_prod.py --api https://schoolconnect-api-0yhr.onrender.com \\
+        --web https://schoolconnect-web-cwa0.onrender.com --email principal@ubuntu-demo.school.example
 
 Secrets are never arguments (they would end up in your shell history):
 - the staff password is typed at a hidden prompt (or read from SMOKE_PASSWORD, then DEMO_STAFF_PASSWORD);
@@ -172,8 +172,8 @@ def run(api: str, web: str, email: str, password: str, api_key: str, teacher_ema
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--api", required=True, help="API URL, e.g. https://schoolconnect-api.onrender.com")
-    parser.add_argument("--web", required=True, help="Web URL, e.g. https://schoolconnect-web.onrender.com")
+    parser.add_argument("--api", required=True, help="API URL, e.g. https://schoolconnect-api-0yhr.onrender.com")
+    parser.add_argument("--web", required=True, help="Web URL, e.g. https://schoolconnect-web-cwa0.onrender.com")
     parser.add_argument("--email", required=True, help="Principal (or deputy) login email")
     parser.add_argument("--teacher-email", default="teacher@ubuntu-demo.school.example",
                         help="Class teacher login used for the welfare-visibility check")

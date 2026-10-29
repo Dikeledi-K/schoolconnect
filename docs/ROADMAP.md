@@ -116,7 +116,7 @@ One platform, built progressively. Tick each box only when it is built, tested a
 - [x] Scheduled jobs on GitHub Actions: escalation, keep-warm, dry-run retention (calls), forecasts and weekly reports (run on GitHub against Supabase)
 - [x] Stored, signed forecasts for today and pinned demo dates; endpoints read them first
 - [x] `scripts/smoke_test_prod.py` (9 checks, PASS/FAIL + timings): 9/9 locally
-- [ ] **Live:** deployed on Render + Supabase, production seeded with demo data, smoke test 9/9 against the live URLs *(waiting for the account setup in docs/DEPLOYMENT.md)*
+- [x] **Live:** deployed on Render (https://schoolconnect-web-cwa0.onrender.com) + Supabase, production seeded with demo data (9,931 tickets, 16 MB), all 5 scheduled jobs run green, smoke test **9/9** against the live URLs
 - [x] Optimisation: measured memory and 0.1-CPU timings; 30–60× faster workload maths; lazy scikit-learn import; cached checks; no indexes needed (all queries ≤ 6 ms); evaluations re-run (January numbers unchanged)
 - [x] `docs/TECHNICAL.md`, `docs/USER_GUIDE.md` (with screenshots), `docs/DEPLOYMENT.md`, `docs/BUSINESS_CASE.md`
 - [x] 10-minute panel presentation (`docs/PRESENTATION.md`): slides, live demo script, backup plan, 12 Q&A

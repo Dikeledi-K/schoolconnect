@@ -6,7 +6,7 @@ reload starts a new Streamlit session, which logs you out.
 Setup once:  pip install -r requirements-dev.txt  &&  python -m playwright install chromium
 Usage:
     python scripts/take_screenshots.py                                    # local: http://localhost:8501
-    python scripts/take_screenshots.py --web https://schoolconnect-web.onrender.com
+    python scripts/take_screenshots.py --web https://schoolconnect-web-cwa0.onrender.com
 The password is DEMO_STAFF_PASSWORD (environment or .env), or typed at a hidden prompt.
 """
 

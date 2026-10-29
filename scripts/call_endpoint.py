@@ -6,8 +6,8 @@ Free Render services sleep after 15 minutes and take about a minute to wake, so:
 - the script exits with an error if it still fails, so the GitHub run turns red and you get an email.
 
 Usage:
-    python scripts/call_endpoint.py POST https://schoolconnect-api.onrender.com/jobs/escalate --jobs-token
-    python scripts/call_endpoint.py GET  https://schoolconnect-web.onrender.com/
+    python scripts/call_endpoint.py POST https://schoolconnect-api-0yhr.onrender.com/jobs/escalate --jobs-token
+    python scripts/call_endpoint.py GET  https://schoolconnect-web-cwa0.onrender.com/
 The jobs token is read from the JOBS_TOKEN environment variable (a GitHub secret), never an argument.
 """
 

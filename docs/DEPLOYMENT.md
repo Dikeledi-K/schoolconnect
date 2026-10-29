@@ -34,7 +34,8 @@ Everything here runs on **free tiers**. The trade-offs are listed in
 1. On Supabase, click **New project**:
    - **Name:** `schoolconnect`
    - **Password:** use **Generate a password**, and keep it in a password manager.
-   - **Region:** **Central EU (Frankfurt)**.
+   - **Region:** **Central EU (Frankfurt)**, the same as Render. (This project's database ended up in
+     **West EU (Ireland)**, `eu-west-1`. That is fine: Ireland to Frankfurt adds about 20 ms per query.)
 2. When the project is ready, click **Connect**, then **Connection string**, then **Type: URI**,
    then **Transaction pooler** (port **6543**).
 3. Copy the string and replace `[YOUR-PASSWORD]` with the database password.
@@ -118,15 +119,19 @@ print `[]`, which means nothing is left to add.
    | api | `API_KEY` | `PROD_API_KEY` |
    | api | `JOBS_TOKEN` | `PROD_JOBS_TOKEN` |
    | api | `INBOUND_SECRET` | `PROD_INBOUND_SECRET` |
-   | api | `CORS_ORIGINS` | `https://schoolconnect-web.onrender.com` |
+   | api | `CORS_ORIGINS` | `https://schoolconnect-web-cwa0.onrender.com` |
    | api | `ANTHROPIC_API_KEY` | leave empty (the AI is off: `LLM_PROVIDER=rules`) |
-   | web | `API_BASE_URL` | `https://schoolconnect-api.onrender.com` |
+   | web | `API_BASE_URL` | `https://schoolconnect-api-0yhr.onrender.com` |
    | web | `API_KEY` | `PROD_API_KEY` (the same as on the API) |
 
 4. Click **Apply**. The first build takes a few minutes.
-5. Open each service and check its URL at the top of the page. If Render added a suffix (for
-   example `schoolconnect-api-x1y2.onrender.com`), update `API_BASE_URL` on the web service and
-   `CORS_ORIGINS` on the API under **Environment**, then **Save, rebuild and deploy**.
+5. Open each service and check its URL at the top of the page. If Render added a suffix,
+   update `API_BASE_URL` on the web service and `CORS_ORIGINS` on the API under **Environment**,
+   then **Save, rebuild and deploy**. This happened here: the plain names were already taken by
+   other people's apps, so this project's services are `schoolconnect-api-0yhr` and
+   `schoolconnect-web-cwa0`. **Always check the real URL before pasting it anywhere.**
+6. **Before taking a screenshot of the Environment page**, click the eye icon so the values are
+   hidden. If a secret is ever shown, rotate it (section 10).
 
 Every push to `main` redeploys both services (`autoDeployTrigger: commit`). The Python version
 comes from `.python-version` (3.11), the same as CI.
@@ -138,8 +143,8 @@ On GitHub, open the repository, then **Settings**, **Secrets and variables**, **
 
 | Name | Value |
 |---|---|
-| `API_BASE_URL` | the API URL, e.g. `https://schoolconnect-api.onrender.com` (no trailing `/`) |
-| `WEB_URL` | the web URL, e.g. `https://schoolconnect-web.onrender.com` |
+| `API_BASE_URL` | the API URL, e.g. `https://schoolconnect-api-0yhr.onrender.com` (no trailing `/`) |
+| `WEB_URL` | the web URL, e.g. `https://schoolconnect-web-cwa0.onrender.com` |
 | `JOBS_TOKEN` | `PROD_JOBS_TOKEN` |
 | `DATABASE_URL` | your `SUPABASE_DATABASE_URL` value |
 
@@ -204,8 +209,8 @@ record it here:
 ## 8. Smoke test the live site
 
 ```powershell
-python scripts/smoke_test_prod.py --api https://schoolconnect-api.onrender.com `
-    --web https://schoolconnect-web.onrender.com --email principal@ubuntu-demo.school.example
+python scripts/smoke_test_prod.py --api https://schoolconnect-api-0yhr.onrender.com `
+    --web https://schoolconnect-web-cwa0.onrender.com --email principal@ubuntu-demo.school.example
 ```
 
 It reads the password from `DEMO_STAFF_PASSWORD` and the API key from `PROD_API_KEY` in `.env`,

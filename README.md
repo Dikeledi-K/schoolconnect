@@ -12,11 +12,12 @@ Parents write in English, isiZulu, Sesotho, Afrikaans or isiXhosa. SchoolConnect
 
 | | Link |
 |---|---|
-| Web app (parents and staff) | **https://schoolconnect-web.onrender.com** *(confirmed after the Week 8 smoke test, see [WEEK_8.md](docs/weekly/WEEK_8.md))* |
-| API and interactive docs | **https://schoolconnect-api.onrender.com/docs** |
+| Web app (parents and staff) | **https://schoolconnect-web-cwa0.onrender.com** |
+| API and interactive docs | **https://schoolconnect-api-0yhr.onrender.com/docs** |
 
 > 🧪 **Demo: a fictional school with synthetic data.** "Ubuntu Demo Primary School" does not
 > exist. The free servers sleep when unused, so **the first page can take about a minute**.
+> Live smoke test: **9/9 checks passed** on 2026-10-29 ([WEEK_8.md](docs/weekly/WEEK_8.md)).
 > Staff demo logins (principal, deputy, admin, finance, teacher, IT, all
 > `…@ubuntu-demo.school.example`) are available on request.
 

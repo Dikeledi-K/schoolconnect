@@ -38,6 +38,12 @@ All notable changes, one section per bootcamp week.
 - Parent reference lookup ignores punctuation around the reference (e.g. a copied full stop), and
   the confirmation shows the reference on its own with a copy button.
 - `evaluate_forecast.py` writes UTF-8 on every platform.
+- Settings and the job caller trim spaces and line breaks around pasted secrets (a `DATABASE_URL`
+  with a trailing newline broke the first GitHub job).
+
+### Deployed
+- Live on Render (https://schoolconnect-web-cwa0.onrender.com, API https://schoolconnect-api-0yhr.onrender.com)
+  with Supabase Postgres (West EU), seeded with the demo; all 5 scheduled jobs green; live smoke test 9/9.
 
 ## [weeks-3-4] 2026-10-28: Analytics dashboard and weekly business reports
 

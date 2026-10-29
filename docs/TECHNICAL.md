@@ -18,7 +18,7 @@ flowchart LR
     end
 
     WEB -->|"HTTPS + X-API-Key<br/>+ staff bearer token"| API
-    API -->|"TLS, transaction pooler :6543<br/>pool of 3, no prepared statements"| DB[("Supabase Postgres<br/>(Frankfurt)")]
+    API -->|"TLS, transaction pooler :6543<br/>pool of 3, no prepared statements"| DB[("Supabase Postgres<br/>(West EU, Ireland)")]
     API -.optional, masked text only.-> LLM["Claude / Gemini<br/>(off by default)"]
 
     subgraph GH["GitHub Actions"]
