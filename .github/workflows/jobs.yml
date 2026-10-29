@@ -1,6 +1,8 @@
 # Week 8: scheduled jobs for the live demo (docs/DEPLOYMENT.md, section "Scheduled jobs").
 #
 # GitHub cron uses UTC. South Africa (SAST) = UTC + 2, so 06:00 SAST = 04:00 UTC.
+# Times avoid the start of the hour: GitHub says scheduled runs are most often delayed (or even
+# dropped) then.
 # Two kinds of job:
 #   - LIGHT calls to the Render API (escalation, retention) and keep-warm pings;
 #   - HEAVY work (forecasts, weekly reports) runs right here on GitHub's runner, connected
@@ -14,13 +16,13 @@ name: Scheduled jobs
 
 on:
   schedule:
-    - cron: "*/15 4-14 * * 1-5"   # escalate: every 15 min, 06:00-16:45 SAST, Mon-Fri
-    - cron: "0 15 * * 1-5"        # escalate: 17:00 SAST, Mon-Fri (last run of the day)
-    - cron: "*/14 5-13 * * 1-5"   # keep warm: every 14 min, 07:00-15:56 SAST, Mon-Fri
-    - cron: "0 14 * * 1-5"        # keep warm: 16:00 SAST, Mon-Fri
-    - cron: "0 3 * * *"           # forecasts: 05:00 SAST, every day
-    - cron: "0 4 * * 1"           # weekly reports: 06:00 SAST, Mondays
-    - cron: "0 0 * * 0"           # retention (DRY RUN): 02:00 SAST, Sundays
+    - cron: "7-59/15 4-14 * * 1-5"   # escalate: every 15 min (:07 :22 :37 :52), 06:07-16:52 SAST, Mon-Fri
+    - cron: "7 15 * * 1-5"           # escalate: 17:07 SAST, Mon-Fri (last run of the day)
+    - cron: "3-59/14 5-13 * * 1-5"   # keep warm: every 14 min (:03 :17 :31 :45 :59), 07:03-15:59 SAST, Mon-Fri
+    - cron: "13 14 * * 1-5"          # keep warm: 16:13 SAST, Mon-Fri
+    - cron: "23 3 * * *"             # forecasts: 05:23 SAST, every day
+    - cron: "13 4 * * 1"             # weekly reports: 06:13 SAST, Mondays
+    - cron: "17 0 * * 0"             # retention (DRY RUN): 02:17 SAST, Sundays
   workflow_dispatch:
     inputs:
       job:
@@ -36,7 +38,7 @@ concurrency:
 
 jobs:
   escalate:
-    if: github.event.schedule == '*/15 4-14 * * 1-5' || github.event.schedule == '0 15 * * 1-5' || github.event.inputs.job == 'escalate'
+    if: github.event.schedule == '7-59/15 4-14 * * 1-5' || github.event.schedule == '7 15 * * 1-5' || github.event.inputs.job == 'escalate'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -49,7 +51,7 @@ jobs:
         run: python scripts/call_endpoint.py POST "${{ secrets.API_BASE_URL }}/jobs/escalate" --jobs-token
 
   keep-warm:
-    if: github.event.schedule == '*/14 5-13 * * 1-5' || github.event.schedule == '0 14 * * 1-5' || github.event.inputs.job == 'keep-warm'
+    if: github.event.schedule == '3-59/14 5-13 * * 1-5' || github.event.schedule == '13 14 * * 1-5' || github.event.inputs.job == 'keep-warm'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -63,7 +65,7 @@ jobs:
         run: python scripts/call_endpoint.py GET "${{ secrets.WEB_URL }}/"
 
   forecasts:
-    if: github.event.schedule == '0 3 * * *' || github.event.inputs.job == 'forecasts'
+    if: github.event.schedule == '23 3 * * *' || github.event.inputs.job == 'forecasts'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -79,7 +81,7 @@ jobs:
         run: python scripts/refresh_forecasts.py
 
   weekly-reports:
-    if: github.event.schedule == '0 4 * * 1' || github.event.inputs.job == 'weekly-reports'
+    if: github.event.schedule == '13 4 * * 1' || github.event.inputs.job == 'weekly-reports'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -96,7 +98,7 @@ jobs:
   retention-dry-run:
     # DRY RUN ONLY: it reports what would be anonymised and changes nothing. Switch to a real run
     # only after the principal has approved it (recorded in docs/DEPLOYMENT.md).
-    if: github.event.schedule == '0 0 * * 0' || github.event.inputs.job == 'retention-dry-run'
+    if: github.event.schedule == '17 0 * * 0' || github.event.inputs.job == 'retention-dry-run'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

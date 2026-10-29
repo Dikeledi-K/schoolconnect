@@ -1,6 +1,5 @@
 """Week 8: scheduled-job calls (wake-up time, one retry, loud failure) and the schedule itself."""
 
-import re
 import sys
 from pathlib import Path
 
@@ -90,8 +89,9 @@ def test_times_fit_the_school_day_in_south_african_time():
     for name in ("escalate", "keep-warm"):           # weekdays only
         assert all(c.split()[4] == "1-5" for c in SCHEDULES if _job_for(c) == [name])
     assert any(c.endswith("* * 1") for c in SCHEDULES if _job_for(c) == ["weekly-reports"])
-    keep_warm = [c for c in SCHEDULES if _job_for(c) == ["keep-warm"] and c.startswith("*/")]
-    assert keep_warm and int(re.match(r"\*/(\d+)", keep_warm[0]).group(1)) < 15   # before the 15-min sleep
+    keep_warm = [c for c in SCHEDULES if _job_for(c) == ["keep-warm"] and "/" in c.split()[0]]
+    assert keep_warm and int(keep_warm[0].split()[0].split("/")[1]) < 15   # more often than the 15-min sleep
+    assert all(not c.startswith("0 ") and not c.startswith("*/") for c in SCHEDULES)   # never on the hour
 
 
 def test_retention_stays_a_dry_run():
