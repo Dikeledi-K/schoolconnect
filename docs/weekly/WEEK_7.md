@@ -63,7 +63,8 @@ Every step is logged.
    - The new owner's clock restarts, which makes the job **idempotent**.
    - A critical ticket nobody has acknowledged after 30 minutes alerts the deputy principal *and* the
      principal.
-   - It runs in a single request with no background threads, ready for Vercel Cron.
+   - It runs in a single request with no background threads, ready for a scheduler (Week 8:
+     GitHub Actions calls it every 15 minutes in school hours).
 8. **Notifications** through an **outbox** table.
    - `NOTIFY_MODE=dry_run` (the default) only records the notification; `smtp` sends real email.
    - Phone-number contacts are recorded as `not_supported`, and the inbox tells staff to phone the

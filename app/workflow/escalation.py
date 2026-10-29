@@ -1,4 +1,5 @@
-"""Automatic escalation, run by a scheduler calling POST /jobs/escalate (Week 8: Vercel Cron).
+"""Automatic escalation, run by a scheduler calling POST /jobs/escalate (Week 8: GitHub Actions,
+every 15 minutes in school hours, see .github/workflows/jobs.yml).
 
 For every open ticket nobody has acknowledged yet:
 1. Critical and still unacknowledged after 30 minutes -> alert BOTH the deputy principal and
@@ -10,7 +11,7 @@ For every open ticket nobody has acknowledged yet:
 Idempotent: a second run at the same moment finds nothing new, because the escalated ticket
 now has a fresh deadline (from escalated_at) and the critical alert is only sent once.
 Fast and single-threaded: one query plus a little work per open ticket, no background threads
-(it must finish inside one short HTTP request on Vercel).
+(it must finish inside one short HTTP request on Render's free 0.1 CPU instance).
 """
 
 from __future__ import annotations

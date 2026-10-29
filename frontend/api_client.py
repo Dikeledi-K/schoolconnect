@@ -1,7 +1,8 @@
 """Tiny HTTP client for the SchoolConnect API. The ONLY way the frontend talks to the backend.
 
 Configuration (first match wins):
-1. Streamlit secrets (.streamlit/secrets.toml or Streamlit Cloud settings): API_BASE_URL, API_KEY
+1. Streamlit secrets (.streamlit/secrets.toml): API_BASE_URL, API_KEY
+   (on Render they are environment variables on the schoolconnect-web service)
 2. Environment variables with the same names
 3. Default: http://localhost:8000, no key
 

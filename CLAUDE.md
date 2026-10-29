@@ -24,7 +24,12 @@ progressively: each week adds a module (see `docs/ROADMAP.md`).
 - `LLM_PROVIDER` = `rules` (default, offline) | `anthropic` | `gemini`.
   Every AI feature has a non-LLM fallback.
 - plotly (charts), reportlab (PDFs), pandas + scikit-learn (forecasting). No Prophet / heavy libs.
-- Deploy (Week 8): FastAPI on Vercel (instance named `app`), Streamlit Community Cloud, Supabase.
+- Deploy (Week 8): Render (two free web services from `render.yaml`: `schoolconnect-api` runs
+  FastAPI `app.main:app`, `schoolconnect-web` runs Streamlit from the repo root), Supabase Postgres
+  (transaction pooler, port 6543), scheduled jobs on GitHub Actions (`.github/workflows/jobs.yml`).
+  No Vercel, no Streamlit Community Cloud. See `docs/DEPLOYMENT.md`.
+- Python 3.11 pinned in `.python-version` (Render and CI). Runtime deps: `requirements.txt`;
+  dev/test deps: `requirements-dev.txt`.
 - GitHub Actions CI runs pytest on every push.
 
 ## Non-negotiable rules
@@ -78,7 +83,7 @@ docs/                ROADMAP, ARCHITECTURE, DATA, weekly/WEEK_N.md, etc.
 ## Useful commands
 ```
 python -m venv .venv && .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 pytest
 uvicorn app.main:app --reload
 python scripts/seed_db.py
@@ -88,5 +93,9 @@ python scripts/evaluate_forecast.py          # Week 5: writes docs/forecast_eval
 python scripts/demo_week6.py --password "..."  # Week 6: live demo tickets, corrections, replies
 python scripts/demo_week7.py --password "..."  # Week 7: demo staff, workflow, fee exemption, escalation
 python scripts/make_weekly_reports.py --weeks 4 # Weeks 3-4: weekly PDF reports
+python scripts/refresh_forecasts.py           # Week 8: store today's + pinned forecasts (needs JOBS_TOKEN)
+python scripts/measure_performance.py --cpu 0.1  # Week 8: memory/timings like Render's free CPU
+python scripts/take_screenshots.py            # Week 8: docs/screenshots/ (app must be running)
+python scripts/smoke_test_prod.py --api ... --web ... --email ...  # Week 8: check the live site
 streamlit run frontend/Home.py
 ```

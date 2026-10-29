@@ -111,7 +111,7 @@ One platform, built progressively. Tick each box only when it is built, tested a
 ## Week 8 — Deployment, Optimisation & Industry Showcase
 **Outcome:** deployed platform and portfolio.
 
-- [ ] Supabase Postgres, FastAPI on Vercel, Streamlit Community Cloud, scheduled jobs (Vercel Cron or GitHub Actions)
+- [ ] Supabase Postgres, FastAPI and Streamlit on Render (free web services), scheduled jobs on GitHub Actions
 - [ ] Production seeded with demo data; `scripts/smoke_test_prod.py`
 - [ ] Optimisation: DB indexes, safe caching, cold-start check, final classifier evaluation rerun
 - [ ] `docs/TECHNICAL.md`, `docs/USER_GUIDE.md`, `docs/DEPLOYMENT.md`, `docs/BUSINESS_CASE.md`

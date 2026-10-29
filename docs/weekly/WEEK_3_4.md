@@ -98,7 +98,8 @@ then `python scripts/make_weekly_reports.py --weeks 4`. Log in as `principal@ubu
 - The demo history has no built-in reporting quirks, so the reports look tidier than real data will.
 - With no AI configured, the executive summary is assembled from the insight templates (clear, but
   less fluent).
-- The job takes about 15–30 seconds with the forecast outlook; Week 8 must allow for that on Vercel.
+- The job takes about 15–30 seconds with the forecast outlook (about 150 s on Render's free CPU).
+  Week 8 therefore runs it on GitHub Actions, straight against Supabase (`docs/DEPLOYMENT.md`).
 
 ## Retrospective questions
 

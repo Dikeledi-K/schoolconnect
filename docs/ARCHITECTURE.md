@@ -22,7 +22,7 @@ flowchart LR
         F7["✅ W7 Staff login, My work,<br/>Fee exemptions"]
     end
 
-    subgraph API["FastAPI backend (Vercel)"]
+    subgraph API["FastAPI backend (Render)"]
         A1["✅ Tickets API<br/>/tickets /stats /taxonomy"]
         A2["✅ W1 Classifier<br/>rules + LLM + safety guardrails"]
         A3["✅ W6 Response generator<br/>templates + LLM, grounded"]
@@ -41,7 +41,7 @@ flowchart LR
     end
 
     LLM["LLM provider (optional)<br/>Anthropic Claude / Gemini"]
-    CRON["W8 Scheduler<br/>Vercel Cron / GitHub Actions"]
+    CRON["✅ W8 Scheduler<br/>GitHub Actions"]
     MAIL["✅ W7 Email (SMTP)<br/>dry_run outbox by default"]
 
     P --> F1
@@ -136,8 +136,9 @@ method, needs_human, safety_flag, reason, status, created_at, updated_at, resolv
 - **Rules first, LLM optional.** The app is fully usable offline and in CI. The LLM can improve accuracy but is never required.
 - **Only the message text reaches the LLM.** Name, contact and grade are stored but never sent. (Week 6 adds PII masking of the text itself.)
 - **Strict, validated JSON.** Claude is called with a JSON-schema output format. Every field is checked against the taxonomy, and anything invalid falls back to rules.
-- **The official Anthropic SDK** is used for Claude. Gemini is called over plain HTTPS with `httpx` to avoid a large SDK, which matters for Vercel's function size limit.
-- **Frontend over HTTP only**, so it can be deployed separately (Streamlit Cloud) from the API (Vercel).
+- **The official Anthropic SDK** is used for Claude. Gemini is called over plain HTTPS with `httpx` to avoid a large SDK, which keeps the API small for Render's 512 MB free instance.
+- **Frontend over HTTP only**, so it is deployed as its own service (Render `schoolconnect-web`) next to
+  the API (Render `schoolconnect-api`).
 
 ## Week 5 additions: predictive insights
 
@@ -437,6 +438,6 @@ flowchart TB
 - **Single-threaded forecasting model.** The API runs each request in its own thread; letting every
   thread start its own OpenMP pool made later forecasts about 4× slower on a 2-core machine, so the
   (small) gradient-boosting model is limited to one thread. Results are identical.
-- **Week 8 note:** the scheduled job builds 6 reports including a forecast outlook (~15–30 s). On
-  Vercel, give the job function a longer `maxDuration` or run `scripts/make_weekly_reports.py` from
-  a GitHub Actions schedule.
+- **Week 8 note:** the scheduled job builds 6 reports including a forecast outlook (~15–30 s on a
+  laptop, ~150 s on Render's 0.1 CPU). So in production `scripts/make_weekly_reports.py` runs on a
+  GitHub Actions schedule, connected straight to Supabase, instead of calling the Render API.
