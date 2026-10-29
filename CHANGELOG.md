@@ -2,6 +2,43 @@
 
 All notable changes, one section per bootcamp week.
 
+## [week-8] 2026-10-29: Deployment, Optimisation & Industry Showcase
+
+### Added
+- `render.yaml` Render Blueprint: `schoolconnect-api` (FastAPI) and `schoolconnect-web` (Streamlit, from
+  the repo root so the theme loads), free plan, Frankfurt, auto-deploy from `main`, secrets `sync: false`.
+- `.python-version` (3.11) for Render and CI; `requirements-dev.txt` (pytest, psutil, playwright).
+- `app/db.py`: `normalise_url()`, `engine_options()` for Supabase (psycopg 3, pool 3 + 2, `pool_pre_ping`,
+  `pool_recycle=300`, `sslmode=require`, prepared statements off on the transaction pooler port 6543).
+- `ENVIRONMENT` setting and `check_production_settings()`: production refuses to start without
+  `API_KEY` / `JOBS_TOKEN`, with weaker password hashing, or on SQLite.
+- "Demo: fictional school, synthetic data" banner on every page and in the API docs.
+- `stored_forecasts` table: signed (HMAC with a key from `JOBS_TOKEN`), pickled forecast bundles for
+  today and `FORECAST_PINNED_DATES` (default 2025-12-15); endpoints read them before computing.
+  `scripts/refresh_forecasts.py`; `/jobs/refresh-forecast` also stores them.
+- `.github/workflows/jobs.yml`: escalation (every 15 min), keep-warm (every 14 min), dry-run retention
+  as calls to Render; forecasts (daily) and weekly reports (Mondays) run on GitHub against Supabase.
+  `scripts/call_endpoint.py` (180 s timeout, one retry, fails loudly).
+- `scripts/smoke_test_prod.py` (9 checks with timings), `scripts/measure_performance.py` (peak memory,
+  optional Windows 0.1-core CPU cap), `scripts/take_screenshots.py` (Playwright, `docs/screenshots/`).
+- Docs: `docs/DEPLOYMENT.md`, `docs/TECHNICAL.md`, `docs/USER_GUIDE.md`, `docs/BUSINESS_CASE.md`,
+  `docs/PRESENTATION.md`, `docs/weekly/WEEK_8.md`; portfolio `README.md`.
+- Tests: `test_deployment_config.py`, `test_production.py`, `test_stored_forecast.py`, `test_jobs.py`,
+  `test_smoke_test.py`, `test_optimisation.py` (402 tests in total).
+
+### Changed
+- Deployment target: Render + Supabase + GitHub Actions (no Vercel, no Streamlit Community Cloud).
+- `requirements.txt` is runtime only (adds `psycopg[binary]`, drops pytest); CI installs `requirements-dev.txt`.
+- Workload maths reads the forecast table once into a dict: 30–60× faster, identical results.
+- scikit-learn is imported only when a forecast is computed (API start-up 4.9 s to 2.8 s).
+- The classifier fairness check is cached per process; the Risk page builds its PDF only on request;
+  the inbox fetches the audit trail once; spinners on slow actions; staff list and risk summary cached
+  for 2 minutes per login.
+- Sidebar: colours and icons for all 9 pages (the selected "Forecast" label was white on white).
+- Parent reference lookup ignores punctuation around the reference (e.g. a copied full stop), and
+  the confirmation shows the reference on its own with a copy button.
+- `evaluate_forecast.py` writes UTF-8 on every platform.
+
 ## [weeks-3-4] 2026-10-28: Analytics dashboard and weekly business reports
 
 Weeks 3 and 4 were skipped in the bootcamp schedule; built now on top of Week 7.

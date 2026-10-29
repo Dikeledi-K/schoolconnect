@@ -114,7 +114,8 @@ def run(api: str, web: str, email: str, password: str, api_key: str, teacher_ema
     def summary():
         r = s.get("/analytics/summary", token)
         _expect(r, 200)
-        return None, f"{r.json()['metrics'].get('tickets', '?')} tickets last week"
+        volume = r.json()["metrics"]["volume"]
+        return None, f"{volume['total']} messages last week ({volume['previous']} the week before)"
 
     s.check("/analytics/summary", summary)
 

@@ -441,3 +441,33 @@ flowchart TB
 - **Week 8 note:** the scheduled job builds 6 reports including a forecast outlook (~15–30 s on a
   laptop, ~150 s on Render's 0.1 CPU). So in production `scripts/make_weekly_reports.py` runs on a
   GitHub Actions schedule, connected straight to Supabase, instead of calling the Render API.
+
+
+## Week 8 additions: deployment and optimisation
+
+The production architecture, with the full module list, data model, API summary, security notes and
+measurements, is in [TECHNICAL.md](TECHNICAL.md). In short:
+
+```mermaid
+flowchart LR
+    U["Parents & staff"] -->|HTTPS| W["Render: schoolconnect-web<br/>(Streamlit)"]
+    W -->|"HTTPS + X-API-Key + bearer"| A["Render: schoolconnect-api<br/>(FastAPI)"]
+    A -->|"transaction pooler :6543"| D[("Supabase Postgres")]
+    G1["GitHub Actions: escalate,<br/>keep-warm, retention (dry run)"] --> A
+    G2["GitHub Actions: forecasts,<br/>weekly reports"] -->|DATABASE_URL| D
+```
+
+| Part | File(s) | Responsibility |
+|---|---|---|
+| Blueprint | `render.yaml`, `.python-version` | two free web services in Frankfurt, Python 3.11, secrets never in git |
+| Database engine | `app/db.py` | psycopg 3, small pool, prepared statements off on the transaction pooler |
+| Production checks | `app/config.py: check_production_settings` | refuse to start without secrets, with weak hashing, or on SQLite |
+| Stored forecasts | `app/forecasting/service.py`, `stored_forecasts` | signed bundles for today and pinned dates; endpoints read them first |
+| Scheduled jobs | `.github/workflows/jobs.yml`, `scripts/call_endpoint.py`, `scripts/refresh_forecasts.py` | light calls to the API; heavy work on GitHub against Supabase |
+| Checks and measurements | `scripts/smoke_test_prod.py`, `scripts/measure_performance.py`, `scripts/take_screenshots.py` | live smoke test, memory/CPU measurements, screenshots |
+
+### Data model (Week 8)
+
+`stored_forecasts`: id, as_of, fingerprint (SHA-256 of the history used), versions (Python / pandas /
+numpy / scikit-learn), payload (pickled bundle without actuals), signature (HMAC-SHA256), seconds,
+created_at.

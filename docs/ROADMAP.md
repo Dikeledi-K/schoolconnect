@@ -111,9 +111,14 @@ One platform, built progressively. Tick each box only when it is built, tested a
 ## Week 8 — Deployment, Optimisation & Industry Showcase
 **Outcome:** deployed platform and portfolio.
 
-- [ ] Supabase Postgres, FastAPI and Streamlit on Render (free web services), scheduled jobs on GitHub Actions
-- [ ] Production seeded with demo data; `scripts/smoke_test_prod.py`
-- [ ] Optimisation: DB indexes, safe caching, cold-start check, final classifier evaluation rerun
-- [ ] `docs/TECHNICAL.md`, `docs/USER_GUIDE.md`, `docs/DEPLOYMENT.md`, `docs/BUSINESS_CASE.md`
-- [ ] 10-minute panel presentation outline
-- [ ] Portfolio README: pitch, live links, screenshots, features by week, stack, how to run, evaluation results, what I learned
+- [x] Render Blueprint (`render.yaml`): two free web services in Frankfurt, Python 3.11 pinned, auto-deploy from `main`
+- [x] Supabase Postgres via the transaction pooler (port 6543, prepared statements off, small pool); production start-up checks
+- [x] Scheduled jobs on GitHub Actions: escalation, keep-warm, dry-run retention (calls), forecasts and weekly reports (run on GitHub against Supabase)
+- [x] Stored, signed forecasts for today and pinned demo dates; endpoints read them first
+- [x] `scripts/smoke_test_prod.py` (9 checks, PASS/FAIL + timings): 9/9 locally
+- [ ] **Live:** deployed on Render + Supabase, production seeded with demo data, smoke test 9/9 against the live URLs *(waiting for the account setup in docs/DEPLOYMENT.md)*
+- [x] Optimisation: measured memory and 0.1-CPU timings; 30–60× faster workload maths; lazy scikit-learn import; cached checks; no indexes needed (all queries ≤ 6 ms); evaluations re-run (January numbers unchanged)
+- [x] `docs/TECHNICAL.md`, `docs/USER_GUIDE.md` (with screenshots), `docs/DEPLOYMENT.md`, `docs/BUSINESS_CASE.md`
+- [x] 10-minute panel presentation (`docs/PRESENTATION.md`): slides, live demo script, backup plan, 12 Q&A
+- [x] Portfolio README: pitch, live links, screenshots, features by week, results, stack, how to run (What I learned / About me: for Dikeledi to write)
+- [x] `docs/weekly/WEEK_8.md`; 402 tests passing
