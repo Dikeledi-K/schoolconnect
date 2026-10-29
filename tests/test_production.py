@@ -92,3 +92,15 @@ def test_every_page_shows_the_demo_banner():
     assert "demo_banner()" in inspect.getsource(ui.page)
     for page in [frontend / "Home.py", *sorted((frontend / "pages").glob("*.py"))]:
         assert "ui.page(" in page.read_text(encoding="utf-8"), page.name
+
+
+def test_every_sidebar_page_has_a_colour_and_an_icon():
+    """A page without a colour rule showed a white label on a white button when selected."""
+    import re
+
+    frontend = Path(__file__).resolve().parent.parent / "frontend"
+    css = (frontend / "ui.py").read_text(encoding="utf-8")
+    pages = 1 + len(list((frontend / "pages").glob("*.py")))          # Home + pages/
+    colours = set(re.findall(r'li:nth-child\((\d+)\) a \{ --accent', css))
+    icons = set(re.findall(r'li:nth-child\((\d+)\) a p::before', css))
+    assert colours >= {str(i) for i in range(1, pages + 1)} and icons >= {str(i) for i in range(1, pages + 1)}

@@ -24,16 +24,16 @@ DOMAIN = "ubuntu-demo.school.example"
 DESKTOP = {"width": 1400, "height": 1000}
 PHONE = {"width": 390, "height": 844}
 
-# (file name, who logs in, sidebar link to click, how far to scroll down)
+# (file name, who logs in, sidebar link to click, text to scroll to, tab or option to click first)
 STAFF_PAGES = [
-    ("03_my_work_deputy", "deputy", "My work", 0),
-    ("04_staff_inbox", "principal", "Staff inbox", 0),
-    ("05_ticket_detail", "principal", "Staff inbox", 1000),
-    ("06_fee_exemptions", "principal", "Fee exemptions", 0),
-    ("07_analytics", "principal", "Analytics", 0),
-    ("08_weekly_reports", "principal", "Weekly reports", 0),
-    ("09_forecast", "principal", "Forecast and workload", 0),
-    ("10_risk_and_compliance", "principal", "Risk and compliance", 0),
+    ("03_my_work_deputy", "deputy", "My work", None, None),
+    ("04_staff_inbox", "principal", "Staff inbox", None, None),
+    ("05_ticket_detail", "principal", "Staff inbox", "Reply to the parent", None),
+    ("06_fee_exemptions", "principal", "Fee exemptions", None, "Principal"),
+    ("07_analytics", "principal", "Analytics", None, None),
+    ("08_weekly_reports", "principal", "Weekly reports", None, None),
+    ("09_forecast", "principal", "Forecast and workload", None, "Backtest demo"),
+    ("10_risk_and_compliance", "principal", "Risk and compliance", None, None),
 ]
 
 
@@ -57,10 +57,9 @@ async def settle(page, extra_ms: int = 2500) -> None:
     await page.wait_for_timeout(extra_ms)
 
 
-async def shot(page, name: str, scroll: int = 0) -> None:
-    if scroll:
-        await page.mouse.move(900, 600)
-        await page.mouse.wheel(0, scroll)
+async def shot(page, name: str, scroll_to: str | None = None) -> None:
+    if scroll_to:   # scroll the page (not a table inside it) until this text is at the top
+        await page.get_by_text(scroll_to).first.evaluate("e => e.scrollIntoView({block: 'start'})")
         await page.wait_for_timeout(1200)
     path = OUT / f"{name}.png"
     await page.screenshot(path=str(path))
@@ -102,17 +101,19 @@ async def main(web: str) -> None:
         await phone.close()
 
         current = None
-        for name, user, link, scroll in STAFF_PAGES:
+        for name, user, link, scroll_to, click in STAFF_PAGES:
             if user != current:
                 await page.close()
                 page = await browser.new_page(viewport=DESKTOP)
                 await login(page, web, user, pw)
                 current = user
             await nav(page, link)
-            if name == "09_forecast":            # the January backtest view used in the demo
-                await page.get_by_text("Backtest demo").click()
+            if click:                            # e.g. the January backtest view used in the demo
+                tab = page.get_by_role("tab", name=click)
+                target = tab.first if await tab.count() else page.get_by_text(click).first
+                await target.click()
                 await settle(page, 5000)
-            await shot(page, name, scroll)
+            await shot(page, name, scroll_to)
         await browser.close()
 
 

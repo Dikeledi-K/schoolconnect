@@ -74,22 +74,29 @@ _CSS = """
 }
 [data-testid="stSidebarNavLink"][aria-current="page"] p { color: #ffffff; }
 /* One colour + icon per page, in menu order:
-   Home, Send a message, My work, Staff inbox, Fee exemptions, Forecast, Risk.
+   Home, Send a message, My work, Staff inbox, Fee exemptions, Analytics, Weekly reports,
+   Forecast, Risk.
    Shades are dark enough for white text (contrast 4.5:1 or more). */
+/* Fallback colour, so a page added later is never white-on-white when selected */
+[data-testid="stSidebarNavItems"] a { --accent: #c2410c; }
 [data-testid="stSidebarNavItems"] li:nth-child(1) a { --accent: #c2410c; }
 [data-testid="stSidebarNavItems"] li:nth-child(2) a { --accent: #be3455; }
 [data-testid="stSidebarNavItems"] li:nth-child(3) a { --accent: #6d28d9; }
 [data-testid="stSidebarNavItems"] li:nth-child(4) a { --accent: #15803d; }
 [data-testid="stSidebarNavItems"] li:nth-child(5) a { --accent: #0369a1; }
 [data-testid="stSidebarNavItems"] li:nth-child(6) a { --accent: #b45309; }
-[data-testid="stSidebarNavItems"] li:nth-child(7) a { --accent: #0f766e; }
+[data-testid="stSidebarNavItems"] li:nth-child(7) a { --accent: #4d7c0f; }
+[data-testid="stSidebarNavItems"] li:nth-child(8) a { --accent: #1d4ed8; }
+[data-testid="stSidebarNavItems"] li:nth-child(9) a { --accent: #0f766e; }
 [data-testid="stSidebarNavItems"] li:nth-child(1) a p::before { content: "🏠  "; }
 [data-testid="stSidebarNavItems"] li:nth-child(2) a p::before { content: "✉️  "; }
 [data-testid="stSidebarNavItems"] li:nth-child(3) a p::before { content: "✅  "; }
 [data-testid="stSidebarNavItems"] li:nth-child(4) a p::before { content: "📥  "; }
 [data-testid="stSidebarNavItems"] li:nth-child(5) a p::before { content: "💰  "; }
-[data-testid="stSidebarNavItems"] li:nth-child(6) a p::before { content: "📈  "; }
-[data-testid="stSidebarNavItems"] li:nth-child(7) a p::before { content: "🛡️  "; }
+[data-testid="stSidebarNavItems"] li:nth-child(6) a p::before { content: "📊  "; }
+[data-testid="stSidebarNavItems"] li:nth-child(7) a p::before { content: "🗂️  "; }
+[data-testid="stSidebarNavItems"] li:nth-child(8) a p::before { content: "📈  "; }
+[data-testid="stSidebarNavItems"] li:nth-child(9) a p::before { content: "🛡️  "; }
 
 /* ===== Page header banner: sunny orange, rounded, with a soft "sun" circle ===== */
 .sc-hero {
