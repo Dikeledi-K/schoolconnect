@@ -13,6 +13,7 @@ services:
     name: schoolconnect-api
     runtime: python
     plan: free
+    region: frankfurt                  # next to the Supabase project (Central EU)
     branch: main
     autoDeployTrigger: commit          # redeploy on every push to main
     buildCommand: pip install -r requirements.txt
@@ -49,6 +50,7 @@ services:
     name: schoolconnect-web
     runtime: python
     plan: free
+    region: frankfurt
     branch: main
     autoDeployTrigger: commit
     buildCommand: pip install -r frontend/requirements.txt

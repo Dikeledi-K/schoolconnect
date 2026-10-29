@@ -19,6 +19,7 @@ def test_two_free_python_web_services_from_main():
     for s in services.values():
         assert (s["type"], s["runtime"], s["plan"], s["branch"]) == ("web", "python", "free", "main")
         assert s["autoDeployTrigger"] == "commit"
+        assert s["region"] == "frankfurt"          # same region as the Supabase project
     api, web = services["schoolconnect-api"], services["schoolconnect-web"]
     assert api["startCommand"] == "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     assert api["healthCheckPath"] == "/health" and api["buildCommand"] == "pip install -r requirements.txt"
