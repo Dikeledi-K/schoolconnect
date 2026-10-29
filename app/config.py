@@ -6,6 +6,7 @@ so `database_url` is filled from DATABASE_URL.
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -60,6 +61,14 @@ class Settings(BaseSettings):
 
     # Comma-separated allowed origins for CORS.
     cors_origins: str = "http://localhost:8501"
+
+    @field_validator("database_url", "api_key", "jobs_token", "inbound_secret", "anthropic_api_key",
+                     "gemini_api_key", "smtp_password", mode="before")
+    @classmethod
+    def strip_pasted_whitespace(cls, value):
+        """Week 8: secrets pasted into a dashboard often carry a trailing newline or space.
+        A DATABASE_URL ending in a newline made the database name "postgres\\n" (does not exist)."""
+        return value.strip() if isinstance(value, str) else value
 
     @property
     def pinned_forecast_dates(self) -> list[str]:

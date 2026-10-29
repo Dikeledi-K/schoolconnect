@@ -53,7 +53,9 @@ def main() -> None:
     parser.add_argument("--jobs-token", action="store_true", help="Send X-Jobs-Token from $JOBS_TOKEN")
     parser.add_argument("--timeout", type=float, default=180.0)
     args = parser.parse_args()
-    token = os.environ.get("JOBS_TOKEN", "") if args.jobs_token else None
+    # .strip(): a secret pasted with a trailing newline must not break the header or the URL.
+    token = os.environ.get("JOBS_TOKEN", "").strip() if args.jobs_token else None
+    args.url = args.url.strip()
     if args.jobs_token and not token:
         sys.exit("JOBS_TOKEN is not set (add it as a GitHub secret).")
     if not call(args.method, args.url, token, args.timeout):

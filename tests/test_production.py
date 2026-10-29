@@ -104,3 +104,12 @@ def test_every_sidebar_page_has_a_colour_and_an_icon():
     colours = set(re.findall(r'li:nth-child\((\d+)\) a \{ --accent', css))
     icons = set(re.findall(r'li:nth-child\((\d+)\) a p::before', css))
     assert colours >= {str(i) for i in range(1, pages + 1)} and icons >= {str(i) for i in range(1, pages + 1)}
+
+
+def test_pasted_secrets_lose_surrounding_whitespace(monkeypatch):
+    """A DATABASE_URL secret pasted with a trailing newline broke the GitHub job (database "postgres\n")."""
+    monkeypatch.setenv("DATABASE_URL", POOLER + "\n")
+    monkeypatch.setenv("JOBS_TOKEN", "  tok \n")
+    settings = Settings()
+    assert settings.database_url == POOLER and settings.jobs_token == "tok"
+    assert make_engine(settings.database_url).url.database == "postgres"
